@@ -1,5 +1,5 @@
-import os
-from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory
+# app.py
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from database import db
 from flask_migrate import Migrate
@@ -7,6 +7,7 @@ import random
 import json
 from datetime import datetime
 import uuid
+import os
 from flask_bcrypt import Bcrypt
 
 app = Flask(__name__, static_folder='static')
@@ -26,19 +27,23 @@ with app.app_context():
 
 from models import Spieler, Spiel, SpielZustand
 
-@app.route('/static/svg/<path:filename>')
-def custom_static(filename):
-    return send_from_directory(os.path.join(app.root_path, 'static/svg'), filename)
+# Die Trumpffarbe für das Spiel wird einmal festgelegt
+trumpf = random.choice(['C', 'D', 'H', 'S'])  # Kreuz, Karo, Herz, Pik
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
+
 @app.route('/spielfeld')
 def spielfeld():
+    print('Spielfeld Route aufgerufen')
     if 'user_id' not in session:
+        print('Benutzer nicht eingeloggt, Weiterleitung zur Login-Seite')
         return redirect(url_for('login'))
+    print('Benutzer eingeloggt, Rendern der Spielfeldseite')
     return render_template('spielfeld.html')
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -97,7 +102,12 @@ def handle_disconnect():
 
 @socketio.on('start_game')
 def start_game(data):
-    spieler_anzahl = data.get('spieler', 2)  # Default-Wert auf 2 setzen, falls nichts übergeben wurde
+    print('Spiel starten mit Daten:', data)
+    try:
+        spieler_anzahl = int(data.get('spieler', 2))  # Konvertiere in Integer
+    except ValueError:
+        print("Ungültige Anzahl von Spielern, Standardwert 2 wird verwendet.")
+        spieler_anzahl = 2
 
     spielsitzung_id = str(uuid.uuid4())
     session['spielsitzung_id'] = spielsitzung_id
@@ -114,20 +124,14 @@ def start_game(data):
         spieler_haende[f"spieler_{i+1}"] = karten[i * karten_pro_spieler:(i + 1) * karten_pro_spieler]
     zieh_stapel = karten[spieler_anzahl * karten_pro_spieler:]
 
-    # Bestimme den Trumpf
-    trumpf_karte = zieh_stapel.pop()
-    trumpf = trumpf_karte[-1]
-    zieh_stapel.append(trumpf_karte)
-
     aktiver_spieler_id = f"spieler_{random.randint(1, spieler_anzahl)}"
 
     spiel_zustand = SpielZustand(
         spielsitzung_id=spielsitzung_id,
         spieler_haende=json.dumps(spieler_haende),
         aktueller_spieler_id=aktiver_spieler_id,
-        ablage_stapel=json.dumps([]),  # Leeres Array, um 'NOT NULL' Constraint zu erfüllen
-        zieh_stapel=json.dumps(zieh_stapel),
-        trumpf=trumpf  # Trumpf initialisieren
+        ablage_stapel=json.dumps([]),
+        zieh_stapel=json.dumps(zieh_stapel)
     )
     db.session.add(spiel_zustand)
     db.session.commit()
@@ -138,7 +142,6 @@ def start_game(data):
         'aktueller_spieler': aktiver_spieler_id,
         'trumpf': trumpf
     }, room=request.sid)
-
 
 @socketio.on('play_card')
 def play_card(data):
@@ -153,71 +156,66 @@ def play_card(data):
 
     spieler_haende = json.loads(spiel_zustand.spieler_haende)
     ablage_stapel = json.loads(spiel_zustand.ablage_stapel or '[]')
-    aktueller_spieler = spiel_zustand.aktueller_spieler_id
-    trumpf = spiel_zustand.trumpf
 
-    if karte in spieler_haende[spieler_id] and spieler_id == aktueller_spieler:
-        if len(ablage_stapel) % 2 == 0:  # Attack phase
-            if is_valid_attack(karte, ablage_stapel):
-                spieler_haende[spieler_id].remove(karte)
-                ablage_stapel.append(karte)
-            else:
-                emit('invalid_play', {'message': 'Invalid attack'}, room=request.sid)
-                return
-        else:  # Defense phase
-            if is_valid_defense(ablage_stapel[-1], karte, trumpf):
-                spieler_haende[spieler_id].remove(karte)
-                ablage_stapel.append(karte)
-            else:
-                emit('invalid_play', {'message': 'Invalid defense'}, room=request.sid)
+    if karte in spieler_haende[spieler_id]:
+        if is_valid_play(karte, ablage_stapel):
+            spieler_haende[spieler_id].remove(karte)
+            ablage_stapel.append(karte)
+            spiel_zustand.spieler_haende = json.dumps(spieler_haende)
+            spiel_zustand.ablage_stapel = json.dumps(ablage_stapel)
+            
+            # Überprüfe, ob ein Spieler keine Karten mehr hat (Spielende)
+            if not spieler_haende[spieler_id] and not zieh_stapel:
+                emit('game_over', {'message': f'Spieler {spieler_id} hat gewonnen!'}, broadcast=True)
                 return
 
-        spiel_zustand.spieler_haende = json.dumps(spieler_haende)
-        spiel_zustand.ablage_stapel = json.dumps(ablage_stapel)
-        
-        if not spieler_haende[spieler_id] and not json.loads(spiel_zustand.zieh_stapel):
-            emit('game_over', {'message': f'Spieler {spieler_id} hat gewonnen!'}, broadcast=True)
-            return
+            db.session.commit()
 
-        db.session.commit()
-
-        emit('card_played', {
-            'spieler_haende': spieler_haende,
-            'aktueller_spieler_id': spiel_zustand.aktueller_spieler_id,
-            'ablage_stapel': ablage_stapel,
-            'trumpf': trumpf
-        }, room=request.sid)
+            emit('card_played', {
+                'spieler_haende': spieler_haende,
+                'aktueller_spieler_id': spiel_zustand.aktueller_spieler_id,
+                'ablage_stapel': ablage_stapel,
+                'trumpf': trumpf
+            }, room=request.sid)
+        else:
+            emit('invalid_play', {'message': 'Ungültiger Zug'}, room=request.sid)
     else:
-        emit('invalid_play', {'message': 'Not your turn'}, room=request.sid)
+        emit('invalid_play', {'message': 'Karte nicht im Besitz'}, room=request.sid)
 
 def beende_aktiven_zug(spielsitzung_id, erfolgreicher_angriff):
     spiel_zustand = SpielZustand.query.filter_by(spielsitzung_id=spielsitzung_id).first()
     if not spiel_zustand:
         return
+
     spieler_haende = json.loads(spiel_zustand.spieler_haende)
     ablage_stapel = json.loads(spiel_zustand.ablage_stapel or '[]')
     zieh_stapel = json.loads(spiel_zustand.zieh_stapel or '[]')
     aktueller_spieler_id = spiel_zustand.aktueller_spieler_id
+
     if erfolgreicher_angriff:
         ablage_stapel = []
     else:
         spieler_haende[aktueller_spieler_id].extend(ablage_stapel)
         ablage_stapel = []
+
+    # Ziehe Karten auf 6
     for spieler_id in spieler_haende.keys():
         while len(spieler_haende[spieler_id]) < 6 and zieh_stapel:
             spieler_haende, zieh_stapel = ziehe_karte(spieler_id, zieh_stapel, spieler_haende)
+
     spiel_zustand.spieler_haende = json.dumps(spieler_haende)
     spiel_zustand.ablage_stapel = json.dumps(ablage_stapel)
     spiel_zustand.zieh_stapel = json.dumps(zieh_stapel)
-    spiel_zustand.aktueller_spieler_id = get_next_player(aktueller_spieler_id, list(spieler_haende.keys()), erfolgreicher_angriff)
+    spiel_zustand.aktueller_spieler_id = get_next_player(aktueller_spieler_id, list(spieler_haende.keys()))
+
     db.session.commit()
+
     emit('game_state_updated', {
         'spieler_haende': spieler_haende,
         'aktueller_spieler_id': spiel_zustand.aktueller_spieler_id,
         'ablage_stapel': ablage_stapel,
-        'trumpf': spiel_zustand.trumpf
+        'trumpf': trumpf
     }, broadcast=True)
-
 
 @socketio.on('end_turn')
 def end_turn(data):
@@ -226,7 +224,7 @@ def end_turn(data):
     beende_aktiven_zug(spielsitzung_id, erfolgreicher_angriff)
 
 
-def is_valid_play(karte, ablage_stapel, trumpf):
+def is_valid_play(karte, ablage_stapel):
     if not ablage_stapel:
         return True  # Erster Zug, keine Einschränkungen
 
@@ -236,41 +234,22 @@ def is_valid_play(karte, ablage_stapel, trumpf):
 
     werte_rangfolge = ['6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
 
-    if len(ablage_stapel) % 2 == 0:  # Angriffsphase
-        return all(k[:-1] == karte[:-1] for k in ablage_stapel)  # Karten müssen denselben Wert haben
-    else:  # Verteidigungsphase
-        return is_valid_defense(letzte_karte, karte, trumpf)
+    if karte_farbe == letzte_karte_farbe:
+        return werte_rangfolge.index(karte_wert) > werte_rangfolge.index(letzte_karte_wert)
+    if karte_farbe == trumpf and letzte_karte_farbe != trumpf:
+        return True
+    return False
 
-
-def get_next_player(current_player, players, erfolgreicher_angriff):
-    current_index = players.index(current_player)
-    return players[(current_index + 1) % len(players)] if erfolgreicher_angriff else players[(current_index + 1) % len(players)]
-
+def get_next_player(current_player_id, player_ids):
+    current_index = player_ids.index(current_player_id)
+    return player_ids[(current_index + 1) % len(player_ids)]
 
 def ziehe_karte(spieler_id, zieh_stapel, spieler_haende):
     if zieh_stapel:
-        karte = zieh_stapel.pop(0)
-        spieler_haende[spieler_id].append(karte)
+        gezogene_karte = zieh_stapel.pop()
+        spieler_haende[spieler_id].append(gezogene_karte)
     return spieler_haende, zieh_stapel
 
-def is_valid_attack(karte, ablage_stapel):
-    if not ablage_stapel:
-        return True  # First attack, no restrictions
-
-    karte_wert = karte[:-1]
-    return all(k[:-1] == karte_wert for k in ablage_stapel if k != 'back')
-
-def is_valid_defense(angriffskarte, verteidigungskarte, trumpf):
-    ang_farbe, ang_wert = angriffskarte[-1], angriffskarte[:-1]
-    vert_farbe, vert_wert = verteidigungskarte[-1], verteidigungskarte[:-1]
-
-    werte_rangfolge = ['6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
-
-    if vert_farbe == ang_farbe:
-        return werte_rangfolge.index(vert_wert) > werte_rangfolge.index(ang_wert)
-    if vert_farbe == trumpf and ang_farbe != trumpf:
-        return True
-    return False
 
 
 @socketio.on('draw_card')
@@ -299,6 +278,7 @@ def draw_card(data):
         }, room=request.sid)
     else:
         emit('empty_deck', {'message': 'Keine Karten mehr im Ziehstapel!'}, room=request.sid)
+
 
 
 if __name__ == '__main__':
