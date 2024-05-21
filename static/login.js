@@ -15,9 +15,3 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-
-function login(email, password) {
-    // Annehmen, dass Sie Ajax verwenden, um sich anzumelden
-    console.log('Login attempt with:', email, password);
-    // Weiter Logik für den Login-Prozess
-}
