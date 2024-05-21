@@ -1,3 +1,4 @@
+<!-- spielfeld.html -->
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -6,7 +7,7 @@
     <title>Durak Spielfeld</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
-    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js" defer></script>
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
     <script src="{{ url_for('static', filename='spielfeld.js') }}" defer></script>
     <style>
         body {
@@ -33,10 +34,17 @@
         .active {
             border: 2px solid yellow;
         }
+        .symbol {
+            font-size: 2em;
+            margin-left: 10px;
+        }
+        .button-container {
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
-    <div id="game-container" data-card-path="{{ url_for('custom_static', filename='') }}">
+    <div id="game-container">
         <h1>Durak Spielfeld</h1>
         <div id="player1-hand" class="player-hand"></div>
         <div id="player2-hand" class="player-hand"></div>
@@ -44,9 +52,17 @@
             <h2>Ablagestapel</h2>
             <div id="discard-pile" class="card-container"></div>
         </div>
-        <button id="end-turn-btn">Zug beenden</button>
-        <div id="draw-pile" class="card" data-backside="{{ url_for('custom_static', filename='2B-backside.svg') }}"></div>
-        <div id="trumpf-symbol"></div>
+        <div id="trumpf-container" class="card-container">
+            <h2>Trumpf</h2>
+            <div id="trumpf-symbol" class="symbol"></div>
+        </div>
+        <div id="draw-pile-container" class="card-container">
+            <div id="draw-pile" class="card" onclick="drawCard('spieler_1')"></div>
+        </div>
+        <div class="button-container">
+            <button onclick="endTurn(true)" class="btn btn-success">Zug beenden (erfolgreicher Angriff)</button>
+            <button onclick="endTurn(false)" class="btn btn-danger">Zug beenden (nicht erfolgreicher Angriff)</button>
+        </div>
     </div>
 </body>
 </html>
