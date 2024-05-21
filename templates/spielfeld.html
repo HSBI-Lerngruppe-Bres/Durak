@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Durak Spielfeld</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js" defer></script>
+    <script src="{{ url_for('static', filename='spielfeld.js') }}" defer></script>
+    <style>
+        body {
+            background-color: #2e2e2e;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        .card-container, .player-hand {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+        }
+        .card {
+            width: 100px;
+            height: 140px;
+            margin: 5px;
+            background-size: cover;
+        }
+        .active {
+            border: 2px solid yellow;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container" data-card-path="{{ url_for('custom_static', filename='') }}">
+        <h1>Durak Spielfeld</h1>
+        <div id="player1-hand" class="player-hand"></div>
+        <div id="player2-hand" class="player-hand"></div>
+        <div id="table" class="card-container">
+            <h2>Ablagestapel</h2>
+            <div id="discard-pile" class="card-container"></div>
+        </div>
+        <button id="end-turn-btn">Zug beenden</button>
+        <div id="draw-pile" class="card" data-backside="{{ url_for('custom_static', filename='2B-backside.svg') }}"></div>
+        <div id="trumpf-symbol"></div>
+    </div>
+</body>
+</html>
