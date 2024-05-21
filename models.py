@@ -25,4 +25,3 @@ class SpielZustand(db.Model):
     aktueller_spieler_id = db.Column(db.String(50), nullable=False)
     ablage_stapel = db.Column(db.String(500), nullable=False)
     zieh_stapel = db.Column(db.String(500), nullable=False)
-    trumpf = db.Column(db.String, nullable=False) 
