@@ -10,6 +10,12 @@
   </div>
   <h1>Trumpf {{trumpf}}</h1>
 
+  <button id="start-game-btn">Spiel Starten</button>
+
+  <div class="drop-zone" id="drop-zone">
+    <p>Ziehe eine Karte hierher, um sie abzulegen</p>
+  </div>
+
   <div class="deck" id="deck">
     {% for card in deck %}
       <div class="card">
@@ -17,6 +23,8 @@
       </div>
     {% endfor %}
   </div>
+  
+  <div class="played-cards" id="played-cards"></div>
   
   <div class="messages" id="messages"></div>
 <script src="{{url_for('static', filename='spielfeld.js')}}" type="text/javascript"></script>

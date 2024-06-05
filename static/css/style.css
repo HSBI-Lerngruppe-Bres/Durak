@@ -1,10 +1,10 @@
-.content{
+.content {
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
-.buttons{
+.buttons {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -12,48 +12,33 @@
     gap: 10px;
 }
 
-.join{
+.join {
     display: flex;
     flex-direction: row;
     justify-content: center;
     width: 100%;
 }
 
-.create-btn{
+.create-btn {
     width: 100%;
 }
 
-/*
-.feld{
-    border-color: black;
-    border-width: 2px;
-    border-style: solid;
-    border-radius: 10px;
-    background-color: whitesmoke;
-    height: 80vh;
-    display: flex;
-    flex-direction: column;
-    width: 80vw;
-    align-items: stretch;
-}
-*/
-
-.messages{
+.messages {
     overflow-y: scroll;
     flex: 1;
     width: 100%;
 }
 
-.inputs{
+.inputs {
     padding: 10px;
     display: flex;
 }
 
-h1{
+h1 {
     text-align: center;
 }
 
-#message{
+#message {
     flex: 1;
 }
 
@@ -64,21 +49,51 @@ h1{
     justify-content: space-between;
     padding-left: 10px;
     padding-right: 10px;
-  }
-  
-  .muted {
+}
+
+.muted {
     font-size: 10px;
     color: darkgray;
-  }
+}
 
-  .card {
+.card {
     border: 1px solid #000;
-    padding: 10px;
+    padding: 3px;  /* Further reduce padding to make the card smaller */
     margin: 5px;
     display: inline-block;
     border-radius: 5px;
     background-color: white;
-    width: 60px;
+    width: 35px;  /* Further reduce width to make the card smaller */
     text-align: center;
-  }
-  
+}
+
+.card:hover{
+    width: 10%;
+    top: 1%;
+    left: 2%;
+    right: 2%;
+    bottom: 2%;
+}
+
+.drop-zone {
+    width: 90%;  /* Increase width */
+    height: 300px;  /* Significantly increase height to fit multiple cards */
+    border: 2px dashed #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 20px auto;
+}
+
+.drop-zone.dragover {
+    border-color: #000;
+}
+
+.drop-zone p {
+    text-align: center;
+    color: #ccc;
+}
+
+.card.dragging {
+    opacity: 0.5;
+}
