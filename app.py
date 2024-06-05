@@ -155,21 +155,6 @@ def room():
 
     return render_template("spielfeld.html", code=room, trumpf=trumpf, deck=deck)
     #---messages=rooms[room]["messages"]
-"""
-@socketio.on("message")
-def message(data):
-    room = session.get("room")
-    if room not in rooms:
-        return 
-    
-    content = {
-        "name": session.get("name"),
-        "message": data["data"]
-    }
-    send(content, to=room)
-    rooms[room]["messages"].append(content)
-    print(f"{session.get('name')} said: {data['data']}")
-"""
 
 @socketio.on("connect")
 def connect(auth):
@@ -186,13 +171,7 @@ def connect(auth):
     rooms[room]["members"] += 1
     print(f"{name} joined room {room}")
 # Protokolliere den Beitritt zur Sitzung
-    """ 
-    sitzung = RaumSitzung(raum=room, name=name)
-    db.session.add(sitzung)
-    db.session.commit()
 
-    print(f"{name} joined room {room}") 
-    """
 
 @socketio.on("disconnect")
 def disconnect():
@@ -208,14 +187,6 @@ def disconnect():
     send({"name": name, "message": "has left the room"}, to=room)
     print(f"{name} has left the room {room}")
     # Protokolliere das Verlassen der Sitzung
-    """
-    sitzung = RaumSitzung.query.filter_by(raum=room, name=name).order_by(RaumSitzung.beitrittszeit.desc()).first()
-    if sitzung:
-        sitzung.verlasszeit = datetime.utcnow()
-        db.session.commit()
-
-    print(f"{name} has left the room {room}")
-    """
 
 
 if __name__ == "__main__":

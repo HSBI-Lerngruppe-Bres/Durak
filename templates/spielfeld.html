@@ -17,28 +17,5 @@
   </div>
   
   <div class="messages" id="messages"></div>
-  <!--
-  <div class="inputs">
-    <input
-      type="text"
-      rows="3"
-      placeholder="Message"
-      name="message"
-      id="message"
-    />
-    <button type="button" name="send" id="send-btn" onClick="sendMessage()">
-      Send
-    </button>
-  </div>
-</div>
--->
 <script src="{{url_for('static', filename='spielfeld.js')}}" type="text/javascript"></script>
-
-<!--
-{% for msg in messages %}
-<script type="text/javascript">
-  createMessage("{{msg.name}}", "{{msg.message}}");
-</script>
-{% endfor %}
--->
 {% endblock %}
