@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %} 
+<div class="feld">
+  <h1>Game Room {{code}}</h1>
+  <div class="copy-area">
+    <textarea id="code-textarea">{{code}}</textarea>
+    <button class="copy-button" id="copy-btn">
+        Kopieren
+    </button>
+  </div>
+  <h1>Trumpf {{trumpf}}</h1>
+
+  <div class="deck" id="deck">
+    {% for card in deck %}
+      <div class="card">
+        <img src="{{ url_for('static', filename='svg/' + card.rank + card.suit + '.svg') }}" alt="{{card.rank}} of {{card.suit}}">
+      </div>
+    {% endfor %}
+  </div>
+  
+  <div class="messages" id="messages"></div>
+<script src="{{url_for('static', filename='spielfeld.js')}}" type="text/javascript"></script>
+{% endblock %}
