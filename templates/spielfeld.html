@@ -12,7 +12,9 @@
 
   <div class="deck" id="deck">
     {% for card in deck %}
-      <div class="card">{{card.rank}} of {{card.suit}}</div>
+      <div class="card">
+        <img src="{{ url_for('static', filename='svg/' + card.rank + card.suit + '.svg') }}" alt="{{card.rank}} of {{card.suit}}">
+      </div>
     {% endfor %}
   </div>
   

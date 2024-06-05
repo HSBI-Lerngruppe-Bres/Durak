@@ -80,7 +80,6 @@ def logout():
 def welcome():
     return render_template('welcome.html')
 
-#------------------------------------------------------------------------------------------------------------------------------------------
 rooms = {}
 
 def generate_unique_code(length):
@@ -94,13 +93,12 @@ def generate_unique_code(length):
     
     return code
 
-# Die Trumpffarbe für das Spiel wird einmal festgelegt
 def generate_trumpf():
-    return random.choice(['C', 'D', 'H', 'S'])  # Kreuz, Karo, Herz, Pik
+    return random.choice(['C', 'D', 'H', 'S'])
 
 def generate_deck():
     ranks = ['6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
-    suits = ['C', 'D', 'H', 'S']  # Kreuz, Karo, Herz, Pik
+    suits = ['C', 'D', 'H', 'S']
     deck = [{'rank': rank, 'suit': suit} for rank in ranks for suit in suits]
     random.shuffle(deck)
     return deck
@@ -167,6 +165,15 @@ def connect(auth):
     send({"name": name, "message": "has entered the gameroom"}, to=room)
     rooms[room]["members"] += 1
     print(f"{name} joined room {room}")
+    
+    # Add session entry to the database
+    try:
+        new_session = RaumSitzung(raum=room, name=name)
+        db.session.add(new_session)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error adding session to the database: {e}")
 
 @socketio.on("disconnect")
 def disconnect():
@@ -181,6 +188,16 @@ def disconnect():
     
     send({"name": name, "message": "has left the room"}, to=room)
     print(f"{name} has left the room {room}")
+    
+    # Update session end time in the database
+    try:
+        session_entry = RaumSitzung.query.filter_by(raum=room, name=name).order_by(RaumSitzung.beitrittszeit.desc()).first()
+        if session_entry:
+            session_entry.verlasszeit = datetime.utcnow()
+            db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error updating session in the database: {e}")
 
 if __name__ == "__main__":
     socketio.run(app, debug=True)
