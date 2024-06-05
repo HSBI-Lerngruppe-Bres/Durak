@@ -11,7 +11,6 @@ import os
 from flask_bcrypt import Bcrypt
 import socket
 
-#app = Flask(__name__, static_folder='static')
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///C:\\Users\\Benjamin\\Desktop\\Durak - 04_06\\instance\\spiel.db'
 app.config['SECRET_KEY'] = 'geheimeschluessel'

@@ -48,14 +48,3 @@ document.getElementById('copy-btn').addEventListener("click", function() {
       alert('Fehler beim Kopieren des Textes: ' + err);
   }
 });
-
-/*
-const sendMessage = () => {
-  const message = document.getElementById("message");
-  if (message.value == "") return;
-  socketio.emit("message", { data: message.value });
-  message.value = "";
-};
-*/
-
-//document.getElementById("send-btn").addEventListener("click", sendMessage);
