@@ -27,7 +27,10 @@ socketio.on("update_deck", (data) => {
   deck.forEach(card => {
     const cardDiv = document.createElement('div');
     cardDiv.className = 'card';
-    cardDiv.innerText = `${card.rank} of ${card.suit}`;
+    const img = document.createElement('img');
+    img.src = `/static/svg/${card.rank}${card.suit}.svg`;
+    img.alt = `${card.rank} of ${card.suit}`;
+    cardDiv.appendChild(img);
     deckDiv.appendChild(cardDiv);
   });
 });
