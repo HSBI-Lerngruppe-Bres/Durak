@@ -20,11 +20,9 @@ app.config['SESSION_COOKIE_SECURE'] = True
 
 socketio = SocketIO(app)
 
-
 db.init_app(app)
 migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
-
 
 with app.app_context():
     db.create_all()
@@ -107,7 +105,6 @@ def generate_deck():
     random.shuffle(deck)
     return deck
 
-
 @app.route('/multiplayer', methods=['POST', 'GET'])
 def multiplayer():
     session.clear()
@@ -128,9 +125,8 @@ def multiplayer():
             room = generate_unique_code(4)
             trumpf = generate_trumpf()
             deck = generate_deck()
-            rooms[room] = {"members": 0, "trumpf": trumpf, "deck": deck}
+            rooms[room] = {"members": 0, "trumpf": trumpf, "deck": deck, "hands": {}}
 
-            #---"messages": [], 
         elif code not in rooms:
             return render_template("multiplayer.html", error="Room does not exist.", code=code, name=name)
 
@@ -138,22 +134,24 @@ def multiplayer():
         session["name"] = name
         return redirect(url_for("room"))
 
-    return render_template('multiplayer.html') 
+    return render_template('multiplayer.html')
 
 @app.route("/room")
 def room():
     room = session.get("room")
-    print(f"Raum: {room}")
-
-    if room is None or session.get("name") is None or room not in rooms:
+    name = session.get("name")
+    if room is None or name is None or room not in rooms:
         return redirect(url_for("multiplayer"))
     
     trumpf = rooms[room]["trumpf"]
-    deck = rooms[room]["deck"]
-    print(f"Trumpf: {trumpf}")
 
-    return render_template("spielfeld.html", code=room, trumpf=trumpf, deck=deck)
-    #---messages=rooms[room]["messages"]
+    if name not in rooms[room]["hands"]:
+        rooms[room]["hands"][name] = rooms[room]["deck"][:6]
+        rooms[room]["deck"] = rooms[room]["deck"][6:]
+
+    player_hand = rooms[room]["hands"][name]
+
+    return render_template("spielfeld.html", code=room, trumpf=trumpf, deck=player_hand)
 
 @socketio.on("connect")
 def connect(auth):
@@ -169,8 +167,6 @@ def connect(auth):
     send({"name": name, "message": "has entered the gameroom"}, to=room)
     rooms[room]["members"] += 1
     print(f"{name} joined room {room}")
-# Protokolliere den Beitritt zur Sitzung
-
 
 @socketio.on("disconnect")
 def disconnect():
@@ -185,8 +181,6 @@ def disconnect():
     
     send({"name": name, "message": "has left the room"}, to=room)
     print(f"{name} has left the room {room}")
-    # Protokolliere das Verlassen der Sitzung
-
 
 if __name__ == "__main__":
     socketio.run(app, debug=True)
