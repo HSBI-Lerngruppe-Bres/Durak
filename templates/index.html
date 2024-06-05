@@ -2,22 +2,107 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="/docs/4.0/assets/img/favicons/favicon.ico">
+
     <title>Durak Kartenspiel</title>
+
+    <link rel="canonical" href="https://getbootstrap.com/docs/4.0/examples/album/">
+
+    <!-- Bootstrap core CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+
+    <!-- Custom styles for this template -->
+    <link href="album.css" rel="stylesheet">
+  <style type="text/css" id="tts-styles">[data-tts-block-id].tts-active {background: rgba(206, 225, 255, 0.9) !important;} [data-tts-sentence-id].tts-active {background: rgba(0, 89, 191, 0.7) !important;}</style></head>
+
+
     <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script> <!-- Hier sicherstellen -->
     <script src="{{ url_for('static', filename='index.js') }}" defer></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Willkommen zum Durak Kartenspiel!</h1>
-        <a href="#" data-spieler="1" class="btn btn-primary start-game-btn">Zum Spielfeld (1 Spieler)</a>
-        <a href="#" data-spieler="2" class="btn btn-primary start-game-btn">Zum Spielfeld (2 Spieler)</a>
-        <button id="invite-button" class="btn btn-secondary">Freunde einladen</button>
-        <a href="{{ url_for('logout') }}" class="btn btn-danger">Abmelden</a>
-        <div id="game-container"></div>
-    </div>
+
+    <header>
+        <div class="navbar navbar-dark bg-dark box-shadow">
+          <div class="container d-flex justify-content-between">
+            <a href="#" class="navbar-brand d-flex align-items-center">
+              <strong>Startseite</strong>
+            </a>
+            <a href="{{ url_for('logout') }}" class="btn btn-danger">Abmelden</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarHeader" aria-controls="navbarHeader" aria-expanded="false" aria-label="Toggle navigation">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+          </div>
+        </div>
+      </header>
+  
+      <main role="main">
+  
+        <section class="jumbotron text-center">
+          <div class="container">
+            <h1 class="jumbotron-heading">Dein Durak Kartenspiel</h1>
+            <p class="lead text-muted">Lade deine Freunde ein oder spiele selbst!</p>
+          </div>
+        </section>
+
+  
+        <div class="album py-5 bg-light">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-md-4">
+                        <div class="card mb-4 box-shadow">
+                          <img class="card-img-top" alt="Thumbnail" 
+                          src="{{url_for('static', filename='images/Thumbnail1.jpg')}}" 
+                          style="height: 225px; width: 100%; display: block;">
+                          <div class="card-body">
+                                <p class="card-text">Tauche ein in die spannende Welt von Durak ein. Lade deine Freunde ein und erlebe unvergessliche Online-Spielabende.</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('multiplayer') }}" class="btn btn-sm btn-outline-secondary">Spiel starten</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card mb-4 box-shadow">
+                            <img class="card-img-top" alt="Thumbnail [100%x225]" src="data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%22349%22%20height%3D%22225%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20349%20225%22%20preserveAspectRatio%3D%22none%22%3E%3Crect%20width%3D%22349%22%20height%3D%22225%22%20fill%3D%22%2355595c%22%2F%3E%3Cg%3E%3Ctext%20x%3D%22117.203125%22%20y%3D%22120.10000019073486%22%20fill%3D%22%23eceeef%22%20font-family%3D%22Arial%2C%20Helvetica%2C%20Open%20Sans%2C%20sans-serif%2C%20monospace%22%20font-size%3D%2217pt%22%3EThumbnail%3C%2Ftext%3E%3C%2Fg%3E%3C%2Fsvg%3E" style="height: 225px; width: 100%; display: block;">
+                            <div class="card-body">
+                                <p class="card-text">Erlebe packende Spiele und verbessere dein Können mit jedem Zug! Starte jetzt dein Durak Spiel.</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('multiplayer') }}" class="btn btn-sm btn-outline-secondary">Spiel starten</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+             
+      </main>
+  
+      <footer class="text-muted">
+       
+      </footer>
+  
+      <!-- Bootstrap core JavaScript
+      ================================================== -->
+      <!-- Placed at the end of the document so the pages load faster -->
+      <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+      <script>window.jQuery || document.write('<script src="../../assets/js/vendor/jquery-slim.min.js"><\/script>')</script>
+      <script src="../../assets/js/vendor/popper.min.js"></script>
+      <script src="../../dist/js/bootstrap.min.js"></script>
+      <script src="../../assets/js/vendor/holder.min.js"></script>
+    
+  
+  <svg xmlns="http://www.w3.org/2000/svg" width="349" height="225" viewBox="0 0 349 225" preserveAspectRatio="none" style="display: none; visibility: hidden; position: absolute; top: -100%; left: -100%;"><defs><style type="text/css"></style></defs><text x="0" y="17" style="font-weight:bold;font-size:17pt;font-family:Arial, Helvetica, Open Sans, sans-serif">Thumbnail</text></svg>
+
+
 </body>
 </html>

@@ -1,5 +1,6 @@
 # models.py
 from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 from database import db
 
 class Spieler(db.Model):
@@ -25,3 +26,10 @@ class SpielZustand(db.Model):
     aktueller_spieler_id = db.Column(db.String(50), nullable=False)
     ablage_stapel = db.Column(db.String(500), nullable=False)
     zieh_stapel = db.Column(db.String(500), nullable=False)
+
+class RaumSitzung(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    raum = db.Column(db.String(4), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    beitrittszeit = db.Column(db.DateTime, default=datetime.utcnow)
+    verlasszeit = db.Column(db.DateTime)

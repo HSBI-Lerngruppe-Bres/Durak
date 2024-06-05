@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %} 
+<form method="post" class="buttons">
+    <h1>Spiele zusammen mit deinen Freunden!</h1>
+    <div>
+        <label>Name:</label>
+        <input 
+        type="text" 
+        placeholder="Usernamen" 
+        name="name" 
+        value="{{name}}"
+        />
+    </div>
+    <div class="join">
+        <input type="text" placeholder="Game-Code" name="code" value="{{code}}"/>
+        <button type="submit" name="join">Join a Game</button>
+    </div>
+    <button type="submit" name="create" class="create-btn">Create a Game</button>
+    {% if error %}
+    <ul>
+        <li>{{error}}</li>
+    </ul>
+    {% endif %}
+</form>
+{% endblock %}

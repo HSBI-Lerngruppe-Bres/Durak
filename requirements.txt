@@ -2,3 +2,6 @@ Flask
 SQLAlchemy
 Flask-DB
 Flask-SQLAlchemy
+Flask-SocketIO
+Bcrypt-Flask
+Flask-Migrate
