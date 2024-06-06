@@ -1,0 +1,5 @@
+env_durak_06_06/
+migrations/
+alembic.ini
+__pycache__/
+__pycache__.py

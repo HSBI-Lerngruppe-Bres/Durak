@@ -8,14 +8,11 @@ from datetime import datetime
 import os
 from flask_bcrypt import Bcrypt
 import sys
-import os
-import sys
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_migrate import Migrate
 import random
 from string import ascii_uppercase
 from datetime import datetime
-from flask_bcrypt import Bcrypt
 
 # Füge das aktuelle Verzeichnis und das Elterndirektorium zum Python-Pfad hinzu
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -25,7 +22,7 @@ from database import db
 from models import Spieler, Spiel, SpielZustand, RaumSitzung
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///C:\\Users\\BaisarEL\\Desktop\\Kartenspiel\\Durak\\instance\\spiel.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///C:\\Users\\Benjamin\\Desktop\\durak_06_06\\instance\\spiel.db'
 app.config['SECRET_KEY'] = 'geheimeschluessel'
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
