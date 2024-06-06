@@ -15,11 +15,24 @@
         <input type="text" placeholder="Game-Code" name="code" value="{{code}}"/>
         <button type="submit" name="join">Join a Game</button>
     </div>
-    <button type="submit" name="create" class="create-btn">Create a Game</button>
+    {% if session['user_id'] %}
+        <button type="submit" name="create" class="create-btn">Create a Game</button>
+    {% else %}
+        <button type="button" onclick="showAlertAndRedirect()" class="create-btn">Create a Game</button>
+    {% endif %}
     {% if error %}
     <ul>
         <li>{{error}}</li>
     </ul>
     {% endif %}
 </form>
+
+<script>
+    function showAlertAndRedirect() {
+        alert('Bitte melden Sie sich an, um ein Spiel zu erstellen.');
+        setTimeout(function() {
+            window.location.href = "{{ url_for('welcome') }}";
+        }, 1000);
+    }
+</script>
 {% endblock %}

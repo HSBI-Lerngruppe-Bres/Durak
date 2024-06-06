@@ -13,6 +13,7 @@ from flask_migrate import Migrate
 import random
 from string import ascii_uppercase
 from datetime import datetime
+from functools import wraps
 
 # Füge das aktuelle Verzeichnis und das Elterndirektorium zum Python-Pfad hinzu
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -45,6 +46,15 @@ with app.app_context():
 
 
 
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            flash('Bitte melden Sie sich an, um auf diese Seite zuzugreifen.')
+            return redirect(url_for('welcome'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 @app.route('/')
 def welcome():
@@ -94,6 +104,7 @@ def logout():
     return redirect(url_for('welcome'))
 
 @app.route('/index')
+@login_required
 def index():
     return render_template('index.html')
 
@@ -129,8 +140,7 @@ def generate_deck():
 
 @app.route('/multiplayer', methods=['POST', 'GET'])
 def multiplayer():
-    session.clear()
-    if request.method =='POST':
+    if request.method == 'POST':
         name = request.form.get("name")
         code = request.form.get("code")
         join = request.form.get("join", False)
@@ -144,6 +154,10 @@ def multiplayer():
         
         room = code
         if create != False:
+            if 'user_id' not in session:
+                flash('Bitte melden Sie sich an, um ein Spiel zu erstellen.')
+                return redirect(url_for('welcome'))
+            
             room = generate_unique_code(4)
             trumpf = generate_trumpf()
             deck = generate_deck()
@@ -153,7 +167,6 @@ def multiplayer():
             return render_template("multiplayer.html", error="Room does not exist.", code=code, name=name)
         elif rooms[code].get("game_started", False):
             return render_template("multiplayer.html", error="The game has already started, please choose another Gameroom or create a new one.", code=code, name=name)
-
 
         session["room"] = room
         session["name"] = name
