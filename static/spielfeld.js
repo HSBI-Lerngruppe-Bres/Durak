@@ -72,20 +72,6 @@ socketio.on('start_player', (data) => {
   createMessage('System', `${startPlayer} beginnt das Spiel.`);
 });
 
-socketio.on('update_other_player_cards', (data) => {
-  const otherPlayerCards = data.other_player_cards;
-  const otherPlayerCardsDiv = document.getElementById("other-player-cards");
-  otherPlayerCardsDiv.innerHTML = ''; // Clear the div first
-  otherPlayerCards.forEach(card => {
-    const cardDiv = document.createElement('div');
-    cardDiv.className = 'card';
-    const img = document.createElement('img');
-    img.src = `/static/svg/back.svg`;  // Assuming you have a back.svg for the back of the card
-    cardDiv.appendChild(img);
-    otherPlayerCardsDiv.appendChild(cardDiv);
-  });
-});
-
 socketio.on('card_played', (data) => {
   const { rank, suit, player } = data;
   createMessage('System', `${player} hat die Karte ${rank} of ${suit} gespielt.`);

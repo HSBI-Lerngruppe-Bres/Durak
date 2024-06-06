@@ -23,7 +23,7 @@ from database import db
 from models import Spieler, Spiel, SpielZustand, RaumSitzung
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///C:\\Users\\Benjamin\\Desktop\\durak_06_06\\instance\\spiel.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///C:\\Users\\BaisarEL\\Desktop\\Kartenspiel\\Durak\\instance\\spiel.db'
 app.config['SECRET_KEY'] = 'geheimeschluessel'
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

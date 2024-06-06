@@ -2,22 +2,60 @@ body {
     font-family: 'Baloo 2', cursive;
     margin: 0;
     padding: 0;
+    background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+    background-size: cover;
+}
+
+.wrapper {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
-    background-size: cover;
-    overflow: hidden;
+    min-height: 100vh;
+    overflow: auto;
+    padding: 20px;
 }
 
 .container {
+    position: relative;
     text-align: center;
     background: rgba(255, 255, 255, 0.9);
     padding: 30px;
     border-radius: 20px;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
     animation: float 6s ease-in-out infinite;
+    max-width: 100%;
+    overflow: auto;
+}
+
+.played-cards {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    position: relative; /* Change to relative to stack properly */
+    margin-top: 20px; /* Adjust as needed */
+    z-index: 1; /* Ensure it is above other elements */
+}
+
+.deck {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 20px; /* Adjust as needed to provide space for played cards */
+    position: relative; /* Maintain stacking context */
+    z-index: 0; /* Ensure it is below played cards */
+}
+
+.card-button {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.card-button img {
+    display: block;
 }
 
 @keyframes float {
