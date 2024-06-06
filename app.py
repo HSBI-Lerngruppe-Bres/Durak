@@ -23,7 +23,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from database import db
 from models import Spieler, Spiel, SpielZustand, RaumSitzung
-#test
+
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///C:\\Users\\BaisarEL\\Desktop\\Kartenspiel\\Durak\\instance\\spiel.db'
 app.config['SECRET_KEY'] = 'geheimeschluessel'
