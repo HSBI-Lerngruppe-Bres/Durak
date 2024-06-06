@@ -68,17 +68,26 @@ h1 {
     text-align: center;
 }
 
-.card:hover{
-    width: 10%;
-    top: 1%;
-    left: 2%;
-    right: 2%;
-    bottom: 2%;
+/* Add these styles for card positioning */
+.spielfeld-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.other-player-cards {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.other-player-cards .card {
+    margin: 0 5px;
 }
 
 .drop-zone {
-    width: 90%;  /* Increase width */
-    height: 300px;  /* Significantly increase height to fit multiple cards */
+    width: 60%;  /* Adjust width to fit layout */
+    height: 150px;  /* Adjust height to fit multiple cards */
     border: 2px dashed #ccc;
     display: flex;
     align-items: center;
@@ -86,15 +95,16 @@ h1 {
     margin: 20px auto;
 }
 
-.drop-zone.dragover {
-    border-color: #000;
+.deck {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
 }
 
-.drop-zone p {
-    text-align: center;
-    color: #ccc;
+.played-cards {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 20px;
 }
 
-.card.dragging {
-    opacity: 0.5;
-}

@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block content %} 
-<div class="feld">
+<div class="spielfeld-container">
   <h1>Game Room {{code}}</h1>
   <div class="copy-area">
     <textarea id="code-textarea">{{code}}</textarea>
@@ -11,6 +11,10 @@
   <h1>Trumpf {{trumpf}}</h1>
 
   <button id="start-game-btn">Spiel Starten</button>
+
+  <div class="other-player-cards" id="other-player-cards">
+    <!-- Placeholder for other player's cards -->
+  </div>
 
   <div class="drop-zone" id="drop-zone">
     <p>Ziehe eine Karte hierher, um sie abzulegen</p>

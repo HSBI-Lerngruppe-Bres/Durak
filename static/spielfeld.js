@@ -20,6 +20,23 @@ socketio.on("message", (data) => {
   createMessage(data.name, data.message);
 });
 
+document.getElementById('copy-btn').addEventListener("click", function() {
+  const textarea = document.getElementById('code-textarea');
+  textarea.select();
+  textarea.setSelectionRange(0, 99999); // Für mobile Geräte
+
+  try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+          alert('Text wurde in die Zwischenablage kopiert.');
+      } else {
+          throw new Error('Kopiervorgang nicht erfolgreich.');
+      }
+  } catch (err) {
+      alert('Fehler beim Kopieren des Textes: ' + err);
+  }
+});
+
 socketio.on("update_deck", (data) => {
   const deck = data.deck;
   const deckDiv = document.getElementById("deck");
@@ -42,23 +59,6 @@ const playCard = (rank, suit) => {
   socketio.emit('play_card', { rank, suit });
 };
 
-document.getElementById('copy-btn').addEventListener("click", function() {
-  const textarea = document.getElementById('code-textarea');
-  textarea.select();
-  textarea.setSelectionRange(0, 99999); // Für mobile Geräte
-
-  try {
-      const successful = document.execCommand('copy');
-      if (successful) {
-          alert('Text wurde in die Zwischenablage kopiert.');
-      } else {
-          throw new Error('Kopiervorgang nicht erfolgreich.');
-      }
-  } catch (err) {
-      alert('Fehler beim Kopieren des Textes: ' + err);
-  }
-});
-
 document.getElementById('start-game-btn').addEventListener("click", function() {
   socketio.emit('start_game');
 });
@@ -70,6 +70,20 @@ socketio.on('redirect', (data) => {
 socketio.on('start_player', (data) => {
   const startPlayer = data.player;
   createMessage('System', `${startPlayer} beginnt das Spiel.`);
+});
+
+socketio.on('update_other_player_cards', (data) => {
+  const otherPlayerCards = data.other_player_cards;
+  const otherPlayerCardsDiv = document.getElementById("other-player-cards");
+  otherPlayerCardsDiv.innerHTML = ''; // Clear the div first
+  otherPlayerCards.forEach(card => {
+    const cardDiv = document.createElement('div');
+    cardDiv.className = 'card';
+    const img = document.createElement('img');
+    img.src = `/static/svg/back.svg`;  // Assuming you have a back.svg for the back of the card
+    cardDiv.appendChild(img);
+    otherPlayerCardsDiv.appendChild(cardDiv);
+  });
 });
 
 socketio.on('card_played', (data) => {

@@ -50,8 +50,8 @@ with app.app_context():
 
 
 @app.route('/')
-def index():
-    return render_template('index.html')
+def welcome():
+    return render_template('welcome.html')
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -96,9 +96,9 @@ def logout():
     flash('Erfolgreich abgemeldet!')
     return redirect(url_for('welcome'))
 
-@app.route('/welcome')
-def welcome():
-    return render_template('welcome.html')
+@app.route('/index')
+def index():
+    return render_template('index.html')
 
 rooms = {}
 
