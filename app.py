@@ -1,33 +1,53 @@
 # app.py
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_socketio import SocketIO, emit, join_room, leave_room, send
-from database import db
 from flask_migrate import Migrate
 import random
 from string import ascii_uppercase
 from datetime import datetime
-import uuid
 import os
 from flask_bcrypt import Bcrypt
-import socket
+import sys
+import os
+import sys
+from flask import Flask, render_template, request, redirect, url_for, flash
+from flask_migrate import Migrate
+import random
+from string import ascii_uppercase
+from datetime import datetime
+from flask_bcrypt import Bcrypt
+
+# Füge das aktuelle Verzeichnis und das Elterndirektorium zum Python-Pfad hinzu
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from database import db
+from models import Spieler, Spiel, SpielZustand, RaumSitzung
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///C:\\Users\\BaisarEL\\Desktop\\Kartenspiel\\Durak\\instance\\spiel.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///C:\\Users\\Benjamin\\Desktop\\durak_06_06\\instance\\spiel.db'
 app.config['SECRET_KEY'] = 'geheimeschluessel'
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SESSION_COOKIE_SECURE'] = True
 
-socketio = SocketIO(app)
 
 db.init_app(app)
 migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
+socketio = SocketIO(app)
+
+
+#########################
+
 
 with app.app_context():
     db.create_all()
 
-from models import Spieler, Spiel, SpielZustand, RaumSitzung
+#########################
+
+
+
 
 @app.route('/')
 def index():
@@ -96,12 +116,19 @@ def generate_unique_code(length):
 def generate_trumpf():
     return random.choice(['C', 'D', 'H', 'S'])
 
+# Eine Funktion, um den Wert eines Kartenrangs zu ermitteln
+def rank_value(rank):
+    rank_order = ['6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+    return rank_order.index(rank)
+
 def generate_deck():
     ranks = ['6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
     suits = ['C', 'D', 'H', 'S']
     deck = [{'rank': rank, 'suit': suit} for rank in ranks for suit in suits]
     random.shuffle(deck)
     return deck
+
+
 
 @app.route('/multiplayer', methods=['POST', 'GET'])
 def multiplayer():
@@ -123,10 +150,13 @@ def multiplayer():
             room = generate_unique_code(4)
             trumpf = generate_trumpf()
             deck = generate_deck()
-            rooms[room] = {"members": 0, "trumpf": trumpf, "deck": deck, "hands": {}}
+            rooms[room] = {"members": 0, "trumpf": trumpf, "deck": deck, "hands": {}, "game_started": False}
 
         elif code not in rooms:
             return render_template("multiplayer.html", error="Room does not exist.", code=code, name=name)
+        elif rooms[code].get("game_started", False):
+            return render_template("multiplayer.html", error="The game has already started, please choose another Gameroom or create a new one.", code=code, name=name)
+
 
         session["room"] = room
         session["name"] = name
@@ -151,6 +181,51 @@ def room():
 
     return render_template("spielfeld.html", code=room, trumpf=trumpf, deck=player_hand)
 
+@socketio.on('start_game')
+def handle_start_game():
+    room = session.get('room')
+    if room and room in rooms:
+        rooms[room]['game_started'] = True
+        emit('message', {'name': 'System', 'message': 'Das Spiel hat begonnen!'}, room=room)
+        
+        # Ermittlung des Startspielers
+        trumpf = rooms[room]['trumpf']
+        player_with_lowest_trump = None
+        lowest_trump_card = None
+
+        for player, hand in rooms[room]['hands'].items():
+            player_trumps = [card for card in hand if card['suit'] == trumpf]
+            if player_trumps:
+                player_lowest_trump = min(player_trumps, key=lambda card: rank_value(card['rank']))
+                if (lowest_trump_card is None or 
+                        rank_value(player_lowest_trump['rank']) < rank_value(lowest_trump_card['rank'])):
+                    lowest_trump_card = player_lowest_trump
+                    player_with_lowest_trump = player
+
+        if player_with_lowest_trump is None:
+            # Wenn keiner der Spieler eine Trumpfkarte hat, wählen wir zufällig einen Spieler
+            player_with_lowest_trump = random.choice(list(rooms[room]['hands'].keys()))
+        
+        rooms[room]['current_player'] = player_with_lowest_trump
+        emit('start_player', {'player': player_with_lowest_trump}, room=room)
+        print(f"Game started in room {room} with player {player_with_lowest_trump}")
+
+@socketio.on('play_card')
+def handle_play_card(data):
+    room = session.get('room')
+    name = session.get('name')
+    if room and name:
+        card = {'rank': data['rank'], 'suit': data['suit']}
+        if card in rooms[room]['hands'][name]:
+            rooms[room]['hands'][name].remove(card)
+            if 'played_cards' not in rooms[room]:
+                rooms[room]['played_cards'] = []
+            rooms[room]['played_cards'].append(card)
+            emit('card_played', {'rank': card['rank'], 'suit': card['suit'], 'player': name}, room=room)
+            emit('update_played_cards', {'played_cards': rooms[room]['played_cards']}, room=room)
+        else:
+            emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=name)
+
 @socketio.on("connect")
 def connect(auth):
     room = session.get("room")
@@ -159,6 +234,9 @@ def connect(auth):
         return
     if room not in rooms:
         leave_room(room)
+        return
+    if room not in rooms or rooms[room].get('game_started', False):
+        emit('redirect', {'url': url_for('multiplayer')})
         return
     
     join_room(room)
@@ -198,6 +276,19 @@ def disconnect():
     except Exception as e:
         db.session.rollback()
         print(f"Error updating session in the database: {e}")
+
+
+@app.route('/check_db')
+def check_db():
+    sessions = RaumSitzung.query.all()
+    return jsonify([{
+        'id': session.id,
+        'raum': session.raum,
+        'name': session.name,
+        'beitrittszeit': session.beitrittszeit,
+        'verlasszeit': session.verlasszeit
+    } for session in sessions])
+
 
 if __name__ == "__main__":
     socketio.run(app, debug=True)
