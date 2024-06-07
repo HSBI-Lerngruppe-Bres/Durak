@@ -22,6 +22,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from database import db
 from models import Spieler, Spiel, SpielZustand, RaumSitzung
 
+# db init
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///C:\\Users\\Benjamin\\Desktop\\durak_06_06\\instance\\spiel.db'
 app.config['SECRET_KEY'] = 'geheimeschluessel'
@@ -35,12 +36,12 @@ migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
 socketio = SocketIO(app)
 
-
-#########################
 with app.app_context():
     db.create_all()
-#########################
 
+
+
+# login and registration handling
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -115,6 +116,8 @@ def generate_unique_code(length):
     
     return code
 
+
+# game handling
 def generate_trumpf():
     return random.choice(['C', 'D', 'H', 'S'])
 
@@ -230,6 +233,8 @@ def handle_play_card(data):
         else:
             emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=name)
 
+
+# session handling
 @socketio.on("connect")
 def connect(auth):
     room = session.get("room")
@@ -281,7 +286,7 @@ def disconnect():
         db.session.rollback()
         print(f"Error updating session in the database: {e}")
 
-
+# check saving values in the db
 @app.route('/check_db')
 def check_db():
     sessions = RaumSitzung.query.all()
