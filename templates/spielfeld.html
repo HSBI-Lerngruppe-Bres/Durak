@@ -1,6 +1,7 @@
 <!-- spielfeld.html -->
 {% extends 'base.html' %}
 {% block content %} 
+<link rel="stylesheet" href="{{url_for('static', filename='css/spielfeld.css')}}">
 <div class="wrapper">
   <div class="container">
     <h1>Game Room {{code}}</h1>
