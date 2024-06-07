@@ -47,7 +47,10 @@ socketio.on("update_deck", (data) => {
     cardDiv.className = 'card-button';
     cardDiv.setAttribute('data-rank', card.rank);
     cardDiv.setAttribute('data-suit', card.suit);
-    cardDiv.addEventListener('click', () => playCard(card.rank, card.suit)); // Click event to play the card
+    cardDiv.setAttribute('draggable', 'true');
+    cardDiv.addEventListener('click', () => playCard(card.rank, card.suit));
+    cardDiv.addEventListener('dragstart', handleDragStart);
+    cardDiv.addEventListener('dragend', handleDragEnd);
     const img = document.createElement('img');
     img.src = `/static/svg/${card.rank}${card.suit}.svg`;
     img.alt = `${card.rank} of ${card.suit}`;
@@ -79,6 +82,14 @@ socketio.on('card_played', (data) => {
   const playedCardsDiv = document.getElementById('played-cards');
   const cardDiv = document.createElement('div');
   cardDiv.className = 'card';
+  cardDiv.setAttribute('data-rank', rank);
+  cardDiv.setAttribute('data-suit', suit);
+  cardDiv.setAttribute('draggable', 'true');
+  cardDiv.addEventListener('dragstart', handleDragStart);
+  cardDiv.addEventListener('dragend', handleDragEnd);
+  cardDiv.addEventListener('dragover', handleDragOver);
+  cardDiv.addEventListener('dragleave', handleDragLeave);
+  cardDiv.addEventListener('drop', handleDrop);
   const img = document.createElement('img');
   img.src = `/static/svg/${rank}${suit}.svg`;
   img.alt = `${rank} of ${suit}`;
@@ -89,10 +100,18 @@ socketio.on('card_played', (data) => {
 socketio.on('update_played_cards', (data) => {
   const playedCards = data.played_cards;
   const playedCardsDiv = document.getElementById('played-cards');
-  playedCardsDiv.innerHTML = ''; // Clear the div first
+  playedCardsDiv.innerHTML = '';
   playedCards.forEach(card => {
     const cardDiv = document.createElement('div');
     cardDiv.className = 'card';
+    cardDiv.setAttribute('data-rank', card.rank);
+    cardDiv.setAttribute('data-suit', card.suit);
+    cardDiv.setAttribute('draggable', 'true');
+    cardDiv.addEventListener('dragstart', handleDragStart);
+    cardDiv.addEventListener('dragend', handleDragEnd);
+    cardDiv.addEventListener('dragover', handleDragOver);
+    cardDiv.addEventListener('dragleave', handleDragLeave);
+    cardDiv.addEventListener('drop', handleDrop);
     const img = document.createElement('img');
     img.src = `/static/svg/${card.rank}${card.suit}.svg`;
     img.alt = `${card.rank} of ${card.suit}`;
@@ -105,11 +124,19 @@ socketio.on('update_played_cards', (data) => {
 socketio.on('update_hand', (data) => {
   const hand = data.hand;
   const deckDiv = document.getElementById('deck');
-  deckDiv.innerHTML = ''; // Clear the div first
+  deckDiv.innerHTML = '';
   hand.forEach(card => {
     const cardDiv = document.createElement('button');
     cardDiv.className = 'card-button';
-    cardDiv.addEventListener('click', () => playCard(card.rank, card.suit)); // Click event to play the card
+    cardDiv.setAttribute('draggable', 'true');
+    cardDiv.setAttribute('data-rank', card.rank);
+    cardDiv.setAttribute('data-suit', card.suit);
+    cardDiv.addEventListener('click', () => playCard(card.rank, card.suit));
+    cardDiv.addEventListener('dragstart', handleDragStart);
+    cardDiv.addEventListener('dragend', handleDragEnd);
+    cardDiv.addEventListener('dragover', handleDragOver);
+    cardDiv.addEventListener('dragleave', handleDragLeave);
+    cardDiv.addEventListener('drop', handleDrop);
     const img = document.createElement('img');
     img.src = `/static/svg/${card.rank}${card.suit}.svg`;
     img.alt = `${card.rank} of ${card.suit}`;
@@ -117,3 +144,46 @@ socketio.on('update_hand', (data) => {
     deckDiv.appendChild(cardDiv);
   });
 });
+
+const handleDragStart = (event) => {
+    event.dataTransfer.setData('text/plain', event.target.dataset.rank + event.target.dataset.suit);
+    event.target.classList.add('dragging');
+};
+
+const handleDragEnd = (event) => {
+    document.querySelectorAll('.highlight').forEach(el => el.classList.remove('highlight'));
+    event.target.classList.remove('dragging');
+};
+
+const handleDragOver = (event) => {
+    event.preventDefault();
+    if (event.target.classList.contains('card')) {
+        event.target.classList.add('highlight');
+    }
+};
+
+const handleDragLeave = (event) => {
+    if (event.target.classList.contains('card')) {
+        event.target.classList.remove('highlight');
+    }
+};
+
+const handleDrop = (event) => {
+    event.preventDefault();
+    const data = event.dataTransfer.getData('text/plain');
+    const rank = data.slice(0, -1);
+    const suit = data.slice(-1);
+    if (event.target.classList.contains('card')) {
+        event.target.classList.remove('highlight');
+        playCard(rank, suit);
+    }
+};
+
+const addDropListeners = (element) => {
+    element.addEventListener('dragover', handleDragOver);
+    element.addEventListener('dragleave', handleDragLeave);
+    element.addEventListener('drop', handleDrop);
+};
+
+// Initialisieren Sie die Drop-Ziele beim Laden der Seite
+document.querySelectorAll('#played-cards .card').forEach(addDropListeners);

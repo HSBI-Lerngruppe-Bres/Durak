@@ -135,8 +135,6 @@ def generate_deck():
     random.shuffle(deck)
     return deck
 
-
-
 @app.route('/multiplayer', methods=['POST', 'GET'])
 def multiplayer():
     if request.method == 'POST':
@@ -238,6 +236,8 @@ def handle_play_card(data):
             emit('update_played_cards', {'played_cards': rooms[room]['played_cards']}, room=room)
         else:
             emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=name)
+
+
 
 
 # session handling
