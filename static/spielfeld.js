@@ -1,3 +1,4 @@
+// spielfeld.js
 var socketio = io();
 
 const messages = document.getElementById("messages");
@@ -97,5 +98,24 @@ socketio.on('update_played_cards', (data) => {
     img.alt = `${card.rank} of ${card.suit}`;
     cardDiv.appendChild(img);
     playedCardsDiv.appendChild(cardDiv);
+  });
+});
+
+// Neuer Event-Listener für die Aktualisierung der Hand des Spielers
+socketio.on('update_hand', (data) => {
+  const hand = data.hand;
+  const deckDiv = document.getElementById('deck');
+  deckDiv.innerHTML = ''; // Clear the div first
+  hand.forEach(card => {
+    const cardDiv = document.createElement('div');
+    cardDiv.className = 'card';
+    cardDiv.setAttribute('data-rank', card.rank);
+    cardDiv.setAttribute('data-suit', card.suit);
+    cardDiv.addEventListener('click', () => playCard(card.rank, card.suit)); // Click event to play the card
+    const img = document.createElement('img');
+    img.src = `/static/svg/${card.rank}${card.suit}.svg`;
+    img.alt = `${card.rank} of ${card.suit}`;
+    cardDiv.appendChild(img);
+    deckDiv.appendChild(cardDiv);
   });
 });

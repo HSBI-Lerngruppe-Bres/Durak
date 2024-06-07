@@ -228,6 +228,10 @@ def handle_play_card(data):
             if 'played_cards' not in rooms[room]:
                 rooms[room]['played_cards'] = []
             rooms[room]['played_cards'].append(card)
+            
+            # Senden der aktualisierten Hand des Spielers an den Spieler
+            emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
+            
             emit('card_played', {'rank': card['rank'], 'suit': card['suit'], 'player': name}, room=room)
             emit('update_played_cards', {'played_cards': rooms[room]['played_cards']}, room=room)
         else:

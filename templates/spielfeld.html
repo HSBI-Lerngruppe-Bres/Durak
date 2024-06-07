@@ -21,9 +21,9 @@
 
     <div class="deck" id="deck">
       {% for card in deck %}
-        <button class="card-button" onclick="playCard('{{ card.rank }}', '{{ card.suit }}')">
+        <div class="card" data-rank="{{ card.rank }}" data-suit="{{ card.suit }}" onclick="playCard('{{ card.rank }}', '{{ card.suit }}')">
           <img src="{{ url_for('static', filename='svg/' + card.rank + card.suit + '.svg') }}" alt="{{ card.rank }} of {{ card.suit }}">
-        </button>
+        </div>
       {% endfor %}
     </div>  
     
