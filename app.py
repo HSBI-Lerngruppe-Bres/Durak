@@ -19,12 +19,14 @@ from functools import wraps
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+basedir = os.path.abspath(os.path.dirname(__file__))
+
 from database import db
 from models import Spieler, Spiel, SpielZustand, RaumSitzung
 
 # db init
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///C:\\Users\\Benjamin\\Desktop\\durak_06_06\\instance\\spiel.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'instance', 'spiel.db')
 app.config['SECRET_KEY'] = 'geheimeschluessel'
 app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
