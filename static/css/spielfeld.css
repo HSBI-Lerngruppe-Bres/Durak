@@ -1,43 +1,75 @@
 /* spielfeld.css */
-.wrapper {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    overflow: auto;
-    padding: 20px;
+body.spielfeld-body {
+    background: #fff;
+    margin: 0;
+    padding: 0;
+    border: none;
+    height: 100vh;
+    font-family: 'Baloo 2', cursive;
+    background-size: cover;
 }
 
-.container {
-    position: relative;
+h1.game-room-title {
+    position: absolute;
+    top: 0%; /* Positioniere das Element 20px vom oberen Rand */
+    left: 50%;
+    transform: translateX(-50%);
+    color: #ff6f61;
+    font-size: 3.5em;
+    margin-bottom: 20px;
+    text-shadow: 2px 2px #ffeedd;
     text-align: center;
-    background: rgba(255, 255, 255, 0.9);
-    padding: 30px;
-    border-radius: 20px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    animation: float 6s ease-in-out infinite;
-    max-width: 100%;
-    overflow: auto;
+}
+
+.copy-area {
+    position: absolute;
+    top: 100px; /* Positioniere das Element 100px vom oberen Rand */
+    left: 8%;
+    transform: translateX(-50%);
+    text-align: center;
+}
+
+h1.trumpf {
+    position: absolute;
+    top: 180px; /* Positioniere das Element 180px vom oberen Rand */
+    left: 7.2%;
+    transform: translateX(-50%);
+    color: #000;
+    font-size: 2.5em;
+    text-align: center;
+}
+
+button#start-game-btn {
+    position: absolute;
+    top: 180px; /* Positioniere das Element 240px vom oberen Rand */
+    left: 7.2%;
+    transform: translateX(-50%);
 }
 
 .played-cards {
+    position: absolute;
+    top: 300px; /* Positioniere das Element 300px vom oberen Rand */
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
-    flex-wrap: wrap;
     justify-content: center;
     gap: 10px;
-    position: relative;
-    margin-top: 20px;
-    z-index: 1;
+}
+
+.played-cards img {
+    width: 100px;
+    height: auto;
 }
 
 .deck {
+    position: absolute;
+    bottom: 20px; /* Positioniere das Element 20px vom unteren Rand */
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
-    flex-wrap: wrap;
     justify-content: center;
-    gap: 10px;
-    margin-top: 20px;
-    position: relative;
-    z-index: 0;
+    overflow-x: auto;
+    width: 100%;
 }
 
 .card-button {
@@ -45,10 +77,42 @@
     border: none;
     padding: 0;
     cursor: pointer;
+    position: relative;
+    margin-left: -50px;
 }
 
 .card-button img {
     display: block;
+    width: 100px;
+    height: auto;
+}
+
+.messages {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    max-height: 150px;
+    overflow-y: auto;
+    width: 300px;
+    background: rgba(0, 0, 0, 0.1);
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 600px) {
+    h1.game-room-title {
+        font-size: 2.5em;
+    }
+    h1.trumpf {
+        font-size: 2em;
+    }
+    button#start-game-btn {
+        font-size: 1em;
+    }
+    .copy-area {
+        width: 80%;
+    }
 }
 
 @keyframes float {

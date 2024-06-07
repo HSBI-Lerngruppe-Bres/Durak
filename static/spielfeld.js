@@ -43,8 +43,8 @@ socketio.on("update_deck", (data) => {
   const deckDiv = document.getElementById("deck");
   deckDiv.innerHTML = '';
   deck.forEach(card => {
-    const cardDiv = document.createElement('div');
-    cardDiv.className = 'card';
+    const cardDiv = document.createElement('button');
+    cardDiv.className = 'card-button';
     cardDiv.setAttribute('data-rank', card.rank);
     cardDiv.setAttribute('data-suit', card.suit);
     cardDiv.addEventListener('click', () => playCard(card.rank, card.suit)); // Click event to play the card
@@ -107,10 +107,8 @@ socketio.on('update_hand', (data) => {
   const deckDiv = document.getElementById('deck');
   deckDiv.innerHTML = ''; // Clear the div first
   hand.forEach(card => {
-    const cardDiv = document.createElement('div');
-    cardDiv.className = 'card';
-    cardDiv.setAttribute('data-rank', card.rank);
-    cardDiv.setAttribute('data-suit', card.suit);
+    const cardDiv = document.createElement('button');
+    cardDiv.className = 'card-button';
     cardDiv.addEventListener('click', () => playCard(card.rank, card.suit)); // Click event to play the card
     const img = document.createElement('img');
     img.src = `/static/svg/${card.rank}${card.suit}.svg`;

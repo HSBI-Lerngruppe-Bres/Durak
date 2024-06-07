@@ -1,43 +1,42 @@
 /* base.css */
 body {
-    font-family: 'Baloo 2', cursive;
     margin: 0;
     padding: 0;
-    background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+    background: none; /* Hintergrund auf 'none' setzen */
     background-size: cover;
+    font-family: sans-serif; /* Allgemeine Schriftart */
 }
 
 h1 {
-    color: #ff6f61;
-    font-size: 3.5em;
+    color: #333;
+    font-size: 2em;
     margin-bottom: 20px;
-    text-shadow: 2px 2px #ffeedd;
 }
 
 p {
-    color: #333333;
-    font-size: 1.5em;
-    margin-bottom: 40px;
+    color: #333;
+    font-size: 1em;
+    margin-bottom: 20px;
 }
 
 .btn {
     display: inline-block;
-    padding: 15px 30px;
+    padding: 10px 20px;
     margin: 10px;
-    font-size: 1.2em;
+    font-size: 1em;
     color: #ffffff;
     text-decoration: none;
-    border-radius: 25px;
+    border-radius: 5px;
     transition: background 0.3s, transform 0.3s;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .btn-primary {
-    background: #ffcc00;
+    background: #007bff;
 }
 
 .btn-secondary {
-    background: #66ccff;
+    background: #6c757d;
 }
 
 .btn:hover {
@@ -45,22 +44,22 @@ p {
 }
 
 .btn-primary:hover {
-    background: #ffb400;
+    background: #0056b3;
 }
 
 .btn-secondary:hover {
-    background: #55aaff;
+    background: #5a6268;
 }
 
 @media (max-width: 600px) {
     h1 {
-        font-size: 2.5em;
+        font-size: 1.5em;
     }
     p {
-        font-size: 1.2em;
+        font-size: 0.9em;
     }
     .btn {
-        padding: 10px 20px;
-        font-size: 1em;
+        padding: 5px 10px;
+        font-size: 0.8em;
     }
 }
