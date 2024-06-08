@@ -124,12 +124,19 @@ button#start-game-btn {
     }
 }
 
-/* Neu hinzugefügte Klassen */
-.card-button.dragging img {
-    transform: rotate(15deg);
-}
-
 .card.highlight {
     box-shadow: 0 0 15px yellow;
     border: 2px solid yellow;
+    z-index: 10; /* Hebt die Karte hervor */
 }
+
+.card-overlay {
+    position: absolute;
+    transform: rotate(15deg);
+    z-index: 10; /* Sicherstellen, dass die Karte über der anderen Karte liegt */
+    width: 100px; /* Anpassen der Größe nach Bedarf */
+    height: auto;
+    top: 0; /* Sicherstellen, dass die überlagerte Karte oben beginnt */
+    left: 0; /* Sicherstellen, dass die überlagerte Karte links beginnt */
+}
+

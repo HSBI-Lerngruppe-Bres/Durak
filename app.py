@@ -237,7 +237,23 @@ def handle_play_card(data):
         else:
             emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=name)
 
+@socketio.on('overplay_card')
+def handle_overplay_card(data):
+    room = session.get('room')
+    name = session.get('name')
+    if room and name:
+        card = {'rank': data['rank'], 'suit': data['suit']}
+        if card in rooms[room]['hands'][name]:
+            rooms[room]['hands'][name].remove(card)
+            if 'played_cards' not in rooms[room]:
+                rooms[room]['played_cards'] = []
+            rooms[room]['played_cards'].append(card)
+            
+            # Senden der aktualisierten Hand des Spielers an den Spieler
+            emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
 
+        else:
+            emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=name)
 
 
 # session handling
