@@ -227,15 +227,13 @@ def handle_play_card(data):
             rooms[room]['hands'][name].remove(card)
             if 'played_cards' not in rooms[room]:
                 rooms[room]['played_cards'] = []
-            rooms[room]['played_cards'].append(card)
+            rooms[room]['played_cards'].append([card])
             
-            # Senden der aktualisierten Hand des Spielers an den Spieler
             emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
-            
             emit('card_played', {'rank': card['rank'], 'suit': card['suit'], 'player': name}, room=room)
             emit('update_played_cards', {'played_cards': rooms[room]['played_cards']}, room=room)
         else:
-            emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=name)
+            emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=request.sid)
 
 @socketio.on('overplay_card')
 def handle_overplay_card(data):
@@ -243,17 +241,18 @@ def handle_overplay_card(data):
     name = session.get('name')
     if room and name:
         card = {'rank': data['rank'], 'suit': data['suit']}
+        target_index = data.get('target_index')
         if card in rooms[room]['hands'][name]:
             rooms[room]['hands'][name].remove(card)
-            if 'played_cards' not in rooms[room]:
-                rooms[room]['played_cards'] = []
-            rooms[room]['played_cards'].append(card)
-            
-            # Senden der aktualisierten Hand des Spielers an den Spieler
-            emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
-
+            if 'played_cards' in rooms[room] and target_index is not None and target_index < len(rooms[room]['played_cards']):
+                rooms[room]['played_cards'][target_index].append(card)
+                emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
+                emit('card_overplayed', {'rank': card['rank'], 'suit': card['suit'], 'player': name, 'target_index': target_index}, room=room)
+                emit('update_played_cards', {'played_cards': rooms[room]['played_cards']}, room=room)
+            else:
+                emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte kann nicht über diese Karte gelegt werden.'}, room=request.sid)
         else:
-            emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=name)
+            emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=request.sid)
 
 
 # session handling
