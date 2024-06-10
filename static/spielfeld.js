@@ -1,8 +1,32 @@
-// spielfeld.js
 var socketio = io();
 
 document.addEventListener('DOMContentLoaded', (event) => {
   addEventListeners();
+
+  // Function to play a card
+  const playCard = (rank, suit) => {
+    console.log(`Karte gespielt: ${rank}${suit}`);
+    socketio.emit('play_card', { rank, suit });
+  };
+
+  // Attach the playCard function to the global scope
+  window.playCard = playCard;
+
+  // Function to end attack
+  const endAttack = () => {
+    socketio.emit('end_attack');
+  };
+
+  // Attach the endAttack function to the global scope
+  window.endAttack = endAttack;
+
+  // Function to take cards
+  const takeCards = () => {
+    socketio.emit('take_cards');
+  };
+
+  // Attach the takeCards function to the global scope
+  window.takeCards = takeCards;
 });
 
 const messages = document.getElementById("messages");
@@ -62,13 +86,17 @@ socketio.on("update_deck", (data) => {
     deckDiv.appendChild(cardDiv);
   });
 });
-/*
-const playCard = (rank, suit) => {
-  socketio.emit('play_card', { rank, suit });
-};
-*/
+
 document.getElementById('start-game-btn').addEventListener("click", function() {
   socketio.emit('start_game');
+});
+
+document.getElementById('end-attack-btn').addEventListener("click", function() {
+  window.endAttack();
+});
+
+document.getElementById('take-cards-btn').addEventListener("click", function() {
+  window.takeCards();
 });
 
 socketio.on('redirect', (data) => {
@@ -152,6 +180,17 @@ socketio.on('update_played_cards', (data) => {
   });
 });
 
+// Update the current player
+socketio.on('update_current_player', (data) => {
+  const currentPlayer = data.current_player;
+  createMessage('System', `Der aktuelle Spieler ist nun ${currentPlayer}.`);
+});
+
+// Clear played cards
+socketio.on('clear_played_cards', () => {
+  const playedCardsDiv = document.getElementById('played-cards');
+  playedCardsDiv.innerHTML = '';
+});
 
 // Neuer Event-Listener für die Aktualisierung der Hand des Spielers
 socketio.on('update_hand', (data) => {
@@ -181,6 +220,38 @@ socketio.on('update_hand', (data) => {
   addEventListeners();
 });
 
+// Neuer Event-Listener für die überlagerte Karte
+socketio.on('card_overplayed', (data) => {
+  const { rank, suit, target_index } = data;
+  const playedCardsDiv = document.getElementById('played-cards');
+  const targetElement = playedCardsDiv.children[target_index];
+
+  // Überlagerte Karte erstellen
+  const cardDiv = document.createElement('div');
+  cardDiv.className = 'card card-overlay';
+  cardDiv.setAttribute('data-rank', rank);
+  cardDiv.setAttribute('data-suit', suit);
+  cardDiv.setAttribute('draggable', 'true');
+  cardDiv.addEventListener('dragstart', handleDragStart);
+  cardDiv.addEventListener('dragend', handleDragEnd);
+  cardDiv.addEventListener('dragover', handleDragOver);
+  cardDiv.addEventListener('dragleave', handleDragLeave);
+  cardDiv.addEventListener('drop', handleDrop);
+
+  const img = document.createElement('img');
+  img.src = `/static/svg/${rank}${suit}.svg`;
+  img.alt = `${rank} of ${suit}`;
+  cardDiv.appendChild(img);
+
+  // Positionieren der überlagerten Karte
+  targetElement.style.position = 'relative';
+  cardDiv.style.position = 'absolute';
+  cardDiv.style.top = '0';
+  cardDiv.style.left = '0';
+  cardDiv.style.zIndex = '10';
+
+  targetElement.appendChild(cardDiv);
+});
 
 // Drag and Drop Handler Functions
 const handleDragStart = (event) => {
@@ -268,8 +339,8 @@ const handleDrop = (event) => {
       const isFromHand = Array.from(deckDiv.children).some(card => card.dataset.rank === draggedRank && card.dataset.suit === draggedSuit);
 
       if (isFromHand) {
-          // Aufrufen der overlayCard Funktion
-          overlayCard(draggedRank, draggedSuit, element);
+          // Überlagerungskarte an den Server senden
+          socketio.emit('overplay_card', { rank: draggedRank, suit: draggedSuit, target_index: [...element.parentElement.children].indexOf(element) });
       } else {
           console.log('Die Karte stammt nicht aus der Hand des Spielers und kann nicht erneut verwendet werden.');
       }
@@ -278,84 +349,23 @@ const handleDrop = (event) => {
   }
 };
 
-
-const overlayCard = (rank, suit, targetElement) => {
-  console.log(`Karte überlagert: ${rank}${suit} auf ${targetElement.dataset.rank}${targetElement.dataset.suit}`);
-
-  const targetIndex = [...targetElement.parentElement.children].indexOf(targetElement);
-
-  // Erstellen Sie die überlagerte Karte
-  const cardDiv = document.createElement('div');
-  cardDiv.className = 'card card-overlay';
-  cardDiv.setAttribute('data-rank', rank);
-  cardDiv.setAttribute('data-suit', suit);
-  cardDiv.setAttribute('draggable', 'true');
-  cardDiv.addEventListener('dragstart', handleDragStart);
-  cardDiv.addEventListener('dragend', handleDragEnd);
-  cardDiv.addEventListener('dragover', handleDragOver);
-  cardDiv.addEventListener('dragleave', handleDragLeave);
-  cardDiv.addEventListener('drop', handleDrop);
-
-  const img = document.createElement('img');
-  img.src = `/static/svg/${rank}${suit}.svg`;
-  img.alt = `${rank} of ${suit}`;
-  cardDiv.appendChild(img);
-
-  // Positionieren Sie die überlagerte Karte
-  targetElement.style.position = 'relative';
-  cardDiv.style.position = 'absolute';
-  cardDiv.style.top = '0';
-  cardDiv.style.left = '0';
-  cardDiv.style.zIndex = '10';
-
-  targetElement.appendChild(cardDiv);
-
-  // Event-Listener entfernen, um die Karte nicht erneut verwenden zu können
-  targetElement.removeAttribute('draggable');
-  targetElement.removeEventListener('dragstart', handleDragStart);
-  targetElement.removeEventListener('dragend', handleDragEnd);
-  targetElement.removeEventListener('dragover', handleDragOver);
-  targetElement.removeEventListener('dragleave', handleDragLeave);
-  targetElement.removeEventListener('drop', handleDrop);
-
-  socketio.emit('overplay_card', { rank: rank, suit: suit, target_index: targetIndex });
-};
-
-
-// Initialisieren Sie die Drop-Ziele beim Laden der Seite
-document.querySelectorAll('#played-cards .card').forEach(card => {
-  addDropListeners(card);
-  console.log('Drop-Listener für gespielte Karten hinzugefügt', card);
-});
-
-
-
-const playCard = (rank, suit) => {
-    console.log(`Karte gespielt: ${rank}${suit}`);
-    socketio.emit('play_card', { rank, suit });
-};
-
 // Event-Listener hinzufügen
 const addEventListeners = () => {
-    const cards = document.querySelectorAll('.card-button, .card');
-    console.log('Karten gefunden:', cards.length); // Überprüfen Sie, ob Karten gefunden werden
-    cards.forEach(card => {
-        const rank = card.dataset.rank || 'undefined';
-        const suit = card.dataset.suit || 'undefined';
-        console.log(`Karte gefunden: Rank: ${rank}, Suit: ${suit}`);
-        card.addEventListener('dragstart', handleDragStart);
-        card.addEventListener('dragend', handleDragEnd);
-        card.addEventListener('dragenter', handleDragEnter);
-        card.addEventListener('dragover', handleDragOver);
-        card.addEventListener('dragleave', handleDragLeave);
-        card.addEventListener('drop', handleDrop);
-        console.log('Event-Listener für Karte hinzugefügt:', card);
-    });
-    console.log('Event-Listener hinzugefügt');
+  const cards = document.querySelectorAll('.card-button, .card');
+  cards.forEach(card => {
+      card.addEventListener('dragstart', handleDragStart);
+      card.addEventListener('dragend', handleDragEnd);
+      card.addEventListener('dragenter', handleDragEnter);
+      card.addEventListener('dragover', handleDragOver);
+      card.addEventListener('dragleave', handleDragLeave);
+      card.addEventListener('drop', handleDrop);
+  });
 };
 
 // Initialisieren Sie die Drop-Ziele beim Laden der Seite
 document.querySelectorAll('#played-cards .card').forEach(card => {
-    addDropListeners(card);
-    console.log('Drop-Listener für gespielte Karten hinzugefügt', card);
+  card.addEventListener('dragenter', handleDragEnter);
+  card.addEventListener('dragover', handleDragOver);
+  card.addEventListener('dragleave', handleDragLeave);
+  card.addEventListener('drop', handleDrop);
 });
