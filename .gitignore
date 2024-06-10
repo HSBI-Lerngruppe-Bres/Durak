@@ -3,4 +3,4 @@ migrations/
 alembic.ini
 __pycache__/
 __pycache__.py
-instance/spiel.db
+instance\spiel.db
