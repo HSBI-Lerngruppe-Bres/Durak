@@ -257,25 +257,29 @@ def handle_overplay_card(data):
         trumpf = rooms[room]['trumpf']
 
         if name != current_player:  # Nur der Verteidiger darf Karten überlagern
-            if card in rooms[room]['hands'][name]:
-                target_card = rooms[room]['played_cards'][target_index][-1]
-                
-                if (card['suit'] == target_card['suit'] and rank_value(card['rank']) > rank_value(target_card['rank'])) or (card['suit'] == trumpf and target_card['suit'] != trumpf):
-                    rooms[room]['hands'][name].remove(card)
-                    rooms[room]['played_cards'][target_index].append(card)
-                    emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
-                    emit('card_overplayed', {'rank': card['rank'], 'suit': card['suit'], 'player': name, 'target_index': target_index}, room=room)
-                elif card['suit'] == trumpf and target_card['suit'] == trumpf and rank_value(card['rank']) > rank_value(target_card['rank']):
-                    rooms[room]['hands'][name].remove(card)
-                    rooms[room]['played_cards'][target_index].append(card)
-                    emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
-                    emit('card_overplayed', {'rank': card['rank'], 'suit': card['suit'], 'player': name, 'target_index': target_index}, room=room)
+            if target_index is not None and 0 <= target_index < len(rooms[room]['played_cards']):
+                if card in rooms[room]['hands'][name]:
+                    target_card = rooms[room]['played_cards'][target_index][-1]
+
+                    if (card['suit'] == target_card['suit'] and rank_value(card['rank']) > rank_value(target_card['rank'])) or (card['suit'] == trumpf and target_card['suit'] != trumpf):
+                        rooms[room]['hands'][name].remove(card)
+                        rooms[room]['played_cards'][target_index].append(card)
+                        emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
+                        emit('card_overplayed', {'rank': card['rank'], 'suit': card['suit'], 'player': name, 'target_index': target_index}, room=room)
+                    elif card['suit'] == trumpf and target_card['suit'] == trumpf and rank_value(card['rank']) > rank_value(target_card['rank']):
+                        rooms[room]['hands'][name].remove(card)
+                        rooms[room]['played_cards'][target_index].append(card)
+                        emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
+                        emit('card_overplayed', {'rank': card['rank'], 'suit': card['suit'], 'player': name, 'target_index': target_index}, room=room)
+                    else:
+                        emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte kann die Zielkarte nicht schlagen.'}, room=request.sid)
                 else:
-                    emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte kann die Zielkarte nicht schlagen.'}, room=request.sid)
+                    emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=request.sid)
             else:
-                emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=request.sid)
+                emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Ungültiges Ziel.'}, room=request.sid)
         else:
             emit('message', {'name': 'System', 'message': 'Nur der Verteidiger darf Karten überlagern.'}, room=request.sid)
+
 
 
 @socketio.on('end_attack')
