@@ -134,6 +134,12 @@ def generate_deck():
     random.shuffle(deck)
     return deck
 
+def draw_cards(room):
+    for player in rooms[room]['hands']:
+        while len(rooms[room]['hands'][player]) < 6 and rooms[room]['draw_pile']:
+            rooms[room]['hands'][player].append(rooms[room]['draw_pile'].pop())
+            emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=player)
+
 @app.route('/multiplayer', methods=['POST', 'GET'])
 def multiplayer():
     if request.method == 'POST':
@@ -157,7 +163,7 @@ def multiplayer():
             room = generate_unique_code(4)
             trumpf = generate_trumpf()
             deck = generate_deck()
-            rooms[room] = {"members": 0, "trumpf": trumpf, "deck": deck, "hands": {}, "game_started": False}
+            rooms[room] = {"members": 0, "trumpf": trumpf, "deck": deck, "hands": {}, "game_started": False, "draw_pile": [], "sids": {}}
 
         elif code not in rooms:
             return render_template("multiplayer.html", error="Room does not exist.", code=code, name=name)
@@ -180,8 +186,8 @@ def room():
     trumpf = rooms[room]["trumpf"]
 
     if name not in rooms[room]["hands"]:
-        rooms[room]["hands"][name] = rooms[room]["deck"][:6]
-        rooms[room]["deck"] = rooms[room]["deck"][6:]
+        rooms[room]["hands"][name] = []
+        rooms[room]["members"] += 1
 
     player_hand = rooms[room]["hands"][name]
 
@@ -193,7 +199,22 @@ def handle_start_game():
     if room and room in rooms:
         rooms[room]['game_started'] = True
         emit('message', {'name': 'System', 'message': 'Das Spiel hat begonnen!'}, room=room)
-        
+
+        # Karten austeilen
+        for player in rooms[room]['hands']:
+            rooms[room]['hands'][player] = rooms[room]['deck'][:6]
+            rooms[room]['deck'] = rooms[room]['deck'][6:]
+
+        # Ziehstapel initialisieren
+        rooms[room]['draw_pile'] = rooms[room]['deck']
+        rooms[room]['deck'] = []
+
+        # Spieler über ihre Hände informieren
+        for player, hand in rooms[room]['hands'].items():
+            if player in rooms[room]['sids']:
+                for sid in rooms[room]['sids'][player]:
+                    emit('update_hand', {'hand': hand}, room=sid)
+
         # Ermittlung des Startspielers
         trumpf = rooms[room]['trumpf']
         player_with_lowest_trump = None
@@ -215,6 +236,22 @@ def handle_start_game():
         rooms[room]['current_player'] = player_with_lowest_trump
         emit('start_player', {'player': player_with_lowest_trump}, room=room)
         print(f"Game started in room {room} with player {player_with_lowest_trump}")
+
+@socketio.on('join')
+def on_join(data):
+    room = session.get('room')
+    name = session.get('name')
+    if room and name:
+        join_room(room)
+        rooms[room]['members'] += 1
+        if name not in rooms[room]['hands']:
+            rooms[room]['hands'][name] = []
+        if name not in rooms[room]['sids']:
+            rooms[room]['sids'][name] = []
+        rooms[room]['sids'][name].append(request.sid)
+        emit('message', {'name': name, 'message': 'has entered the gameroom'}, room=room)
+
+
 
 @socketio.on('play_card')
 def handle_play_card(data):
@@ -289,7 +326,6 @@ def handle_overplay_card(data):
             emit('message', {'name': 'System', 'message': 'Nur der Verteidiger darf Karten überlagern.'}, room=request.sid)
 
 
-
 @socketio.on('end_attack')
 def handle_end_attack():
     room = session.get('room')
@@ -301,6 +337,13 @@ def handle_end_attack():
                 rooms[room]['played_cards'] = []
                 emit('clear_played_cards', room=room)
 
+            # Nachziehen der Karten für alle Spieler
+            for player in rooms[room]['hands']:
+                while len(rooms[room]['hands'][player]) < 6 and rooms[room]['draw_pile']:
+                    rooms[room]['hands'][player].append(rooms[room]['draw_pile'].pop())
+                for sid in rooms[room]['sids'][player]:
+                    emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=sid)
+
             # Der Angreifer bleibt der gleiche, der nächste Spieler wird neuer Angreifer
             players = list(rooms[room]['hands'].keys())
             current_index = players.index(current_player)
@@ -310,6 +353,7 @@ def handle_end_attack():
             emit('message', {'name': 'System', 'message': f'{name} hat den Angriff beendet. Nächster Spieler ist {rooms[room]["current_player"]}.'}, room=room)
         else:
             emit('message', {'name': 'System', 'message': 'Nur der Angreifer kann den Angriff beenden.'}, room=request.sid)
+
             
 @socketio.on('take_cards')
 def handle_take_cards():
@@ -329,21 +373,19 @@ def handle_take_cards():
             emit('clear_played_cards', room=room)
             emit('message', {'name': 'System', 'message': f'{name} hat die Karten genommen.'}, room=room)
 
+            # Nachziehen der Karten für alle Spieler
+            for player in rooms[room]['hands']:
+                while len(rooms[room]['hands'][player]) < 6 and rooms[room]['draw_pile']:
+                    rooms[room]['hands'][player].append(rooms[room]['draw_pile'].pop())
+                for sid in rooms[room]['sids'][player]:
+                    emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=sid)
+
             # Der Angreifer bleibt der gleiche, der nächste Spieler nach dem Verteidiger wird neuer Angreifer
             next_index = (next_index + 1) % len(players)  # Skip the current defender
             rooms[room]['current_player'] = players[next_index]
             emit('update_current_player', {'current_player': rooms[room]['current_player']}, room=room)
         else:
             emit('message', {'name': 'System', 'message': 'Der Angreifer kann die Karten nicht nehmen.'}, room=request.sid)
-
-
-
-def update_current_player(room):
-    players = list(rooms[room]['hands'].keys())
-    current_index = players.index(rooms[room]['current_player'])
-    next_index = (current_index + 1) % len(players)
-    rooms[room]['current_player'] = players[next_index]
-    emit('update_current_player', {'current_player': rooms[room]['current_player']}, room=room)
 
 
 

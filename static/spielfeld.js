@@ -1,32 +1,29 @@
+// spielfeld.js
+
+// Define the playCard function
+const playCard = (rank, suit) => {
+  socketio.emit('play_card', { rank, suit });
+};
+
+// Existing code to add event listeners
 var socketio = io();
 
 document.addEventListener('DOMContentLoaded', (event) => {
+  socketio.emit('join', {});
+  
   addEventListeners();
 
-  // Function to play a card
-  const playCard = (rank, suit) => {
-    console.log(`Karte gespielt: ${rank}${suit}`);
-    socketio.emit('play_card', { rank, suit });
-  };
+  document.getElementById('start-game-btn').addEventListener("click", function() {
+    socketio.emit('start_game');
+  });
 
-  // Attach the playCard function to the global scope
-  window.playCard = playCard;
-
-  // Function to end attack
-  const endAttack = () => {
+  document.getElementById('end-attack-btn').addEventListener("click", function() {
     socketio.emit('end_attack');
-  };
+  });
 
-  // Attach the endAttack function to the global scope
-  window.endAttack = endAttack;
-
-  // Function to take cards
-  const takeCards = () => {
+  document.getElementById('take-cards-btn').addEventListener("click", function() {
     socketio.emit('take_cards');
-  };
-
-  // Attach the takeCards function to the global scope
-  window.takeCards = takeCards;
+  });
 });
 
 const messages = document.getElementById("messages");
@@ -85,18 +82,6 @@ socketio.on("update_deck", (data) => {
     cardDiv.appendChild(img);
     deckDiv.appendChild(cardDiv);
   });
-});
-
-document.getElementById('start-game-btn').addEventListener("click", function() {
-  socketio.emit('start_game');
-});
-
-document.getElementById('end-attack-btn').addEventListener("click", function() {
-  window.endAttack();
-});
-
-document.getElementById('take-cards-btn').addEventListener("click", function() {
-  window.takeCards();
 });
 
 socketio.on('redirect', (data) => {
