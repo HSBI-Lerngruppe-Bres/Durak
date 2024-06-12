@@ -209,13 +209,14 @@ def handle_start_game():
         rooms[room]['draw_pile'] = rooms[room]['deck']
         rooms[room]['deck'] = []
 
+        # Initialisieren der gespielten Karten
+        rooms[room]['played_cards'] = []
+
         # Spieler über ihre Hände informieren
         for player, hand in rooms[room]['hands'].items():
             if player in rooms[room]['sids']:
                 for sid in rooms[room]['sids'][player]:
                     emit('update_hand', {'hand': hand}, room=sid)
-            else:
-                print(f"Fehler: Spieler {player} nicht in rooms[room]['sids'] gefunden.")
 
         # Ermittlung des Startspielers
         trumpf = rooms[room]['trumpf']
@@ -238,6 +239,8 @@ def handle_start_game():
         rooms[room]['current_player'] = player_with_lowest_trump
         emit('start_player', {'player': player_with_lowest_trump}, room=room)
         print(f"Game started in room {room} with player {player_with_lowest_trump}")
+
+
 
 @socketio.on('join')
 def on_join(data):
@@ -278,20 +281,29 @@ def check_winner(room):
 def handle_play_card(data):
     room = session.get('room')
     name = session.get('name')
-    if room and name:
+    if room and name and room in rooms:
         if not rooms[room].get('game_started', False):
             emit('message', {'name': 'System', 'message': 'Das Spiel hat noch nicht begonnen. Bitte warten Sie, bis das Spiel gestartet ist.'}, room=request.sid)
             return
 
         card = {'rank': data['rank'], 'suit': data['suit']}
         current_player = rooms[room]['current_player']
-        if name == current_player:
-            if card in rooms[room]['hands'][name]:
+        players = list(rooms[room]['hands'].keys())
+        defender_index = (players.index(current_player) + 1) % len(players)
+        defender = players[defender_index]
+
+        # Finden Sie den nächsten Spieler mit Karten als Verteidiger
+        while not rooms[room]['hands'].get(defender, None) and defender_index != players.index(current_player):
+            defender_index = (defender_index + 1) % len(players)
+            defender = players[defender_index]
+
+        if card in rooms[room]['hands'][name]:
+            if name == current_player:
                 if 'played_cards' not in rooms[room]:
                     rooms[room]['played_cards'] = []
 
-                defender = list(rooms[room]['hands'].keys())[(list(rooms[room]['hands'].keys()).index(name) + 1) % len(rooms[room]['hands'])]
                 if len(rooms[room]['played_cards']) < len(rooms[room]['hands'][defender]):
+                    # Prüfen, ob der Angreifer nur Karten des gleichen Rangs spielt
                     if rooms[room].get('played_cards'):
                         valid_ranks = {c['rank'] for group in rooms[room]['played_cards'] for c in group}
                         if card['rank'] not in valid_ranks:
@@ -304,14 +316,32 @@ def handle_play_card(data):
                     emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
                     emit('card_played', {'rank': card['rank'], 'suit': card['suit'], 'player': name}, room=room)
                     emit('update_played_cards', {'played_cards': rooms[room]['played_cards']}, room=room)
-
                     check_winner(room)
                 else:
-                    emit('message', {'name': 'System', 'message': f'Ungültiger Zug. Du kannst nicht mehr Karten spielen, als der Verteidiger Karten hat.'}, room=request.sid)
+                    emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nicht mehr Karten spielen, als der Verteidiger Karten hat.'}, room=request.sid)
             else:
-                emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=request.sid)
+                # Logik für Mitangreifer
+                if name != defender:
+                    if 'played_cards' in rooms[room] and rooms[room]['played_cards']:
+                        valid_ranks = {c['rank'] for group in rooms[room]['played_cards'] for c in group}
+                        if card['rank'] in valid_ranks:
+                            if len(rooms[room]['played_cards']) < len(rooms[room]['hands'][defender]):
+                                rooms[room]['hands'][name].remove(card)
+                                rooms[room]['played_cards'].append([card])
+                                emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
+                                emit('card_played', {'rank': card['rank'], 'suit': card['suit'], 'player': name}, room=room)
+                                emit('update_played_cards', {'played_cards': rooms[room]['played_cards']}, room=room)
+                            else:
+                                emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nicht mehr Karten spielen, als der Verteidiger Karten hat.'}, room=request.sid)
+                        else:
+                            emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nur Karten des gleichen Rangs spielen.'}, room=request.sid)
+                    else:
+                        emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nur Karten des gleichen Rangs spielen.'}, room=request.sid)
+                else:
+                    emit('message', {'name': 'System', 'message': 'Verteidiger kann keine Karten legen.'}, room=request.sid)
         else:
-            emit('message', {'name': 'System', 'message': 'Nicht an der Reihe!'}, room=request.sid)
+            emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=request.sid)
+
 
 
 
@@ -325,11 +355,13 @@ def handle_overplay_card(data):
             return
 
         current_player = rooms[room]['current_player']
+        players = list(rooms[room]['hands'].keys())
+        defender = players[(players.index(current_player) + 1) % len(players)]
         card = {'rank': data['rank'], 'suit': data['suit']}
         target_index = data.get('target_index')
         trumpf = rooms[room]['trumpf']
 
-        if name != current_player:  # Nur der Verteidiger darf Karten überlagern
+        if name == defender:  # Nur der Verteidiger darf Karten überlagern
             if target_index is not None and 0 <= target_index < len(rooms[room]['played_cards']):
                 if card in rooms[room]['hands'][name]:
                     target_card = rooms[room]['played_cards'][target_index][-1]
@@ -354,6 +386,7 @@ def handle_overplay_card(data):
             emit('message', {'name': 'System', 'message': 'Nur der Verteidiger darf Karten überlagern.'}, room=request.sid)
 
 
+
 @socketio.on('end_attack')
 def handle_end_attack():
     room = session.get('room')
@@ -361,32 +394,34 @@ def handle_end_attack():
     if room and name:
         current_player = rooms[room]['current_player']
         if name == current_player:
-            all_beaten = all(len(group) == 2 for group in rooms[room]['played_cards'])
+            if 'played_cards' in rooms[room] and any(len(group) == 1 for group in rooms[room]['played_cards']):
+                emit('message', {'name': 'System', 'message': 'Nicht alle Karten wurden geschlagen. Du kannst den Angriff nicht beenden.'}, room=request.sid)
+                return
 
-            if all_beaten:
+            if 'played_cards' in rooms[room] and rooms[room]['played_cards']:
                 rooms[room]['played_cards'] = []
                 emit('clear_played_cards', room=room)
 
-                for player in rooms[room]['hands']:
-                    while len(rooms[room]['hands'][player]) < 6 and rooms[room]['draw_pile']:
-                        rooms[room]['hands'][player].append(rooms[room]['draw_pile'].pop())
-                    for sid in rooms[room]['sids'][player]:
-                        emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=sid)
+            # Nachziehen der Karten für alle Spieler
+            for player in rooms[room]['hands']:
+                while len(rooms[room]['hands'][player]) < 6 and rooms[room]['draw_pile']:
+                    rooms[room]['hands'][player].append(rooms[room]['draw_pile'].pop())
+                for sid in rooms[room]['sids'][player]:
+                    emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=sid)
 
-                players = list(rooms[room]['hands'].keys())
-                current_index = players.index(current_player)
-                next_index = (current_index + 1) % len(players)
-                rooms[room]['current_player'] = players[next_index]
-                emit('update_current_player', {'current_player': rooms[room]['current_player']}, room=room)
-                emit('message', {'name': 'System', 'message': f'{name} hat den Angriff beendet. Nächster Spieler ist {rooms[room]["current_player"]}.'}, room=room)
+            # Der Angreifer bleibt der gleiche, der nächste Spieler wird neuer Angreifer
+            players = list(rooms[room]['hands'].keys())
+            current_index = players.index(current_player)
+            next_index = (current_index + 1) % len(players)
+            rooms[room]['current_player'] = players[next_index]
+            emit('update_current_player', {'current_player': rooms[room]['current_player']}, room=room)
+            emit('message', {'name': 'System', 'message': f'{name} hat den Angriff beendet. Nächster Spieler ist {rooms[room]["current_player"]}.'}, room=room)
 
-                check_winner(room)
-            else:
-                emit('message', {'name': 'System', 'message': 'Du kannst den Angriff nicht beenden, wenn nicht alle Karten geschlagen wurden.'}, room=request.sid)
+            check_winner(room)
         else:
             emit('message', {'name': 'System', 'message': 'Nur der Angreifer kann den Angriff beenden.'}, room=request.sid)
 
-            
+
 @socketio.on('take_cards')
 def handle_take_cards():
     room = session.get('room')
@@ -394,34 +429,39 @@ def handle_take_cards():
     if room and name:
         current_player = rooms[room]['current_player']
         players = list(rooms[room]['hands'].keys())
-        current_index = players.index(current_player)
-        next_index = (current_index + 1) % len(players)
+        defender = players[(players.index(current_player) + 1) % len(players)]
 
-        if name != current_player:
-            all_beaten = all(len(group) == 2 for group in rooms[room]['played_cards'])
+        if name == defender:
+            if 'played_cards' in rooms[room] and all(len(group) == 2 for group in rooms[room]['played_cards']):
+                emit('message', {'name': 'System', 'message': 'Du hast alle Karten geschlagen. Du kannst die Karten nicht nehmen.'}, room=request.sid)
+                return
 
-            if all_beaten:
-                emit('message', {'name': 'System', 'message': 'Alle Karten wurden bereits geschlagen. Du kannst keine Karten nehmen.'}, room=request.sid)
-            else:
-                rooms[room]['hands'][name].extend([card for group in rooms[room]['played_cards'] for card in group])
-                rooms[room]['played_cards'] = []
-                emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
-                emit('clear_played_cards', room=room)
-                emit('message', {'name': 'System', 'message': f'{name} hat die Karten genommen.'}, room=room)
+            # Verteidiger nimmt die Karten
+            rooms[room]['hands'][name].extend([card for group in rooms[room]['played_cards'] for card in group])
+            rooms[room]['played_cards'] = []
+            emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
+            emit('clear_played_cards', room=room)
+            emit('message', {'name': 'System', 'message': f'{name} hat die Karten genommen.'}, room=room)
 
-                for player in rooms[room]['hands']:
-                    while len(rooms[room]['hands'][player]) < 6 and rooms[room]['draw_pile']:
-                        rooms[room]['hands'][player].append(rooms[room]['draw_pile'].pop())
-                    for sid in rooms[room]['sids'][player]:
-                        emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=sid)
+            # Nachziehen der Karten für alle Spieler
+            for player in rooms[room]['hands']:
+                while len(rooms[room]['hands'][player]) < 6 and rooms[room]['draw_pile']:
+                    rooms[room]['hands'][player].append(rooms[room]['draw_pile'].pop())
+                for sid in rooms[room]['sids'][player]:
+                    emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=sid)
 
-                next_index = (next_index + 1) % len(players)
-                rooms[room]['current_player'] = players[next_index]
-                emit('update_current_player', {'current_player': rooms[room]['current_player']}, room=room)
+            # Der Angreifer bleibt der gleiche, der nächste Spieler nach dem Verteidiger wird neuer Angreifer
+            next_index = (players.index(defender) + 1) % len(players)
+            rooms[room]['current_player'] = players[next_index]
+            emit('update_current_player', {'current_player': rooms[room]['current_player']}, room=room)
 
-                check_winner(room)
+            check_winner(room)
         else:
-            emit('message', {'name': 'System', 'message': 'Der Angreifer kann die Karten nicht nehmen.'}, room=request.sid)
+            emit('message', {'name': 'System', 'message': 'Nur der Verteidiger kann die Karten nehmen.'}, room=request.sid)
+
+
+
+
 
 
 
