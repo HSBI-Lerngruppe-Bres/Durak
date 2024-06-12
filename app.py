@@ -269,25 +269,33 @@ def handle_play_card(data):
         current_player = rooms[room]['current_player']
         if name == current_player:
             if card in rooms[room]['hands'][name]:
-                # Prüfen, ob der Angreifer nur Karten des gleichen Rangs spielt
-                if rooms[room].get('played_cards'):
-                    valid_ranks = {c['rank'] for group in rooms[room]['played_cards'] for c in group}
-                    if card['rank'] not in valid_ranks:
-                        emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nur Karten des gleichen Rangs spielen.'}, room=request.sid)
-                        return
-                
-                rooms[room]['hands'][name].remove(card)
+                # Sicherstellen, dass 'played_cards' initialisiert ist
                 if 'played_cards' not in rooms[room]:
                     rooms[room]['played_cards'] = []
-                rooms[room]['played_cards'].append([card])
-                
-                emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
-                emit('card_played', {'rank': card['rank'], 'suit': card['suit'], 'player': name}, room=room)
-                emit('update_played_cards', {'played_cards': rooms[room]['played_cards']}, room=room)
+
+                defender = list(rooms[room]['hands'].keys())[(list(rooms[room]['hands'].keys()).index(name) + 1) % len(rooms[room]['hands'])]
+                if len(rooms[room]['played_cards']) < len(rooms[room]['hands'][defender]):
+                    # Prüfen, ob der Angreifer nur Karten des gleichen Rangs spielt
+                    if rooms[room].get('played_cards'):
+                        valid_ranks = {c['rank'] for group in rooms[room]['played_cards'] for c in group}
+                        if card['rank'] not in valid_ranks:
+                            emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nur Karten des gleichen Rangs spielen.'}, room=request.sid)
+                            return
+
+                    rooms[room]['hands'][name].remove(card)
+                    rooms[room]['played_cards'].append([card])
+
+                    emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
+                    emit('card_played', {'rank': card['rank'], 'suit': card['suit'], 'player': name}, room=room)
+                    emit('update_played_cards', {'played_cards': rooms[room]['played_cards']}, room=room)
+                else:
+                    emit('message', {'name': 'System', 'message': f'Ungültiger Zug. Du kannst nicht mehr Karten spielen, als der Verteidiger Karten hat.'}, room=request.sid)
             else:
                 emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=request.sid)
         else:
             emit('message', {'name': 'System', 'message': 'Nicht an der Reihe!'}, room=request.sid)
+
+
 
 
 @socketio.on('overplay_card')
