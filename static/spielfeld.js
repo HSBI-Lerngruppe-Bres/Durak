@@ -351,3 +351,14 @@ const handleDragEnter = (event) => {
     card.addEventListener('dragleave', handleDragLeave);
     card.addEventListener('drop', handleDrop);
   });
+
+// Neuer Event-Listener für das Spielende
+socketio.on('game_over', (data) => {
+  const placements = data.placements;
+  let message = 'Spiel beendet! Platzierungen:\n';
+  for (const [player, place] of Object.entries(placements)) {
+    message += `${player}: ${place}\n`;
+  }
+  alert(message);
+});
+

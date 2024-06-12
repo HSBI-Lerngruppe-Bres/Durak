@@ -254,6 +254,24 @@ def on_join(data):
             rooms[room]['sids'][name].append(request.sid)
             join_room(room)
 
+def check_winner(room):
+    if 'placements' not in rooms[room]:
+        rooms[room]['placements'] = {}
+
+    players_with_no_cards = [player for player, hand in rooms[room]['hands'].items() if not hand]
+    if players_with_no_cards:
+        for player in players_with_no_cards:
+            if player not in rooms[room]['placements']:
+                rooms[room]['placements'][player] = len(rooms[room]['placements']) + 1
+                emit('message', {'name': 'System', 'message': f'{player} hat Platz {rooms[room]["placements"][player]} belegt!'}, room=room)
+
+        if len(rooms[room]['placements']) == len(rooms[room]['hands']) - 1:
+            for player in rooms[room]['hands']:
+                if player not in rooms[room]['placements']:
+                    rooms[room]['placements'][player] = 'Verlierer'
+                    emit('message', {'name': 'System', 'message': f'{player} ist der Verlierer!'}, room=room)
+            emit('game_over', {'placements': rooms[room]['placements']}, room=room)
+            rooms[room]['game_started'] = False
 
 
 @socketio.on('play_card')
@@ -269,13 +287,11 @@ def handle_play_card(data):
         current_player = rooms[room]['current_player']
         if name == current_player:
             if card in rooms[room]['hands'][name]:
-                # Sicherstellen, dass 'played_cards' initialisiert ist
                 if 'played_cards' not in rooms[room]:
                     rooms[room]['played_cards'] = []
 
                 defender = list(rooms[room]['hands'].keys())[(list(rooms[room]['hands'].keys()).index(name) + 1) % len(rooms[room]['hands'])]
                 if len(rooms[room]['played_cards']) < len(rooms[room]['hands'][defender]):
-                    # Prüfen, ob der Angreifer nur Karten des gleichen Rangs spielt
                     if rooms[room].get('played_cards'):
                         valid_ranks = {c['rank'] for group in rooms[room]['played_cards'] for c in group}
                         if card['rank'] not in valid_ranks:
@@ -288,13 +304,14 @@ def handle_play_card(data):
                     emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
                     emit('card_played', {'rank': card['rank'], 'suit': card['suit'], 'player': name}, room=room)
                     emit('update_played_cards', {'played_cards': rooms[room]['played_cards']}, room=room)
+
+                    check_winner(room)
                 else:
                     emit('message', {'name': 'System', 'message': f'Ungültiger Zug. Du kannst nicht mehr Karten spielen, als der Verteidiger Karten hat.'}, room=request.sid)
             else:
                 emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=request.sid)
         else:
             emit('message', {'name': 'System', 'message': 'Nicht an der Reihe!'}, room=request.sid)
-
 
 
 
@@ -344,27 +361,26 @@ def handle_end_attack():
     if room and name:
         current_player = rooms[room]['current_player']
         if name == current_player:
-            # Überprüfen, ob alle Karten geschlagen wurden
             all_beaten = all(len(group) == 2 for group in rooms[room]['played_cards'])
 
             if all_beaten:
                 rooms[room]['played_cards'] = []
                 emit('clear_played_cards', room=room)
 
-                # Nachziehen der Karten für alle Spieler
                 for player in rooms[room]['hands']:
                     while len(rooms[room]['hands'][player]) < 6 and rooms[room]['draw_pile']:
                         rooms[room]['hands'][player].append(rooms[room]['draw_pile'].pop())
                     for sid in rooms[room]['sids'][player]:
                         emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=sid)
 
-                # Der Angreifer bleibt der gleiche, der nächste Spieler wird neuer Angreifer
                 players = list(rooms[room]['hands'].keys())
                 current_index = players.index(current_player)
                 next_index = (current_index + 1) % len(players)
                 rooms[room]['current_player'] = players[next_index]
                 emit('update_current_player', {'current_player': rooms[room]['current_player']}, room=room)
                 emit('message', {'name': 'System', 'message': f'{name} hat den Angriff beendet. Nächster Spieler ist {rooms[room]["current_player"]}.'}, room=room)
+
+                check_winner(room)
             else:
                 emit('message', {'name': 'System', 'message': 'Du kannst den Angriff nicht beenden, wenn nicht alle Karten geschlagen wurden.'}, room=request.sid)
         else:
@@ -382,30 +398,28 @@ def handle_take_cards():
         next_index = (current_index + 1) % len(players)
 
         if name != current_player:
-            # Überprüfen, ob alle Karten geschlagen wurden
             all_beaten = all(len(group) == 2 for group in rooms[room]['played_cards'])
 
             if all_beaten:
                 emit('message', {'name': 'System', 'message': 'Alle Karten wurden bereits geschlagen. Du kannst keine Karten nehmen.'}, room=request.sid)
             else:
-                # Verteidiger nimmt die Karten
                 rooms[room]['hands'][name].extend([card for group in rooms[room]['played_cards'] for card in group])
                 rooms[room]['played_cards'] = []
                 emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
                 emit('clear_played_cards', room=room)
                 emit('message', {'name': 'System', 'message': f'{name} hat die Karten genommen.'}, room=room)
 
-                # Nachziehen der Karten für alle Spieler
                 for player in rooms[room]['hands']:
                     while len(rooms[room]['hands'][player]) < 6 and rooms[room]['draw_pile']:
                         rooms[room]['hands'][player].append(rooms[room]['draw_pile'].pop())
                     for sid in rooms[room]['sids'][player]:
                         emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=sid)
 
-                # Der Angreifer bleibt der gleiche, der nächste Spieler nach dem Verteidiger wird neuer Angreifer
-                next_index = (next_index + 1) % len(players)  # Skip the current defender
+                next_index = (next_index + 1) % len(players)
                 rooms[room]['current_player'] = players[next_index]
                 emit('update_current_player', {'current_player': rooms[room]['current_player']}, room=room)
+
+                check_winner(room)
         else:
             emit('message', {'name': 'System', 'message': 'Der Angreifer kann die Karten nicht nehmen.'}, room=request.sid)
 
@@ -436,7 +450,6 @@ def connect(auth):
         rooms[room]['sids'][name].append(request.sid)
         join_room(room)
 
-    # Add session entry to the database
     try:
         new_session = RaumSitzung(raum=room, name=name)
         db.session.add(new_session)
@@ -445,7 +458,6 @@ def connect(auth):
         db.session.rollback()
         print(f"Error adding session to the database: {e}")
 
-
 @socketio.on("disconnect")
 def disconnect():
     room = session.get("room")
@@ -453,14 +465,16 @@ def disconnect():
     leave_room(room)
 
     if room in rooms:
-        rooms[room]["members"] -= 1
-        if rooms[room]["members"] <= 0:
-            del rooms[room]
-    
-    send({"name": name, "message": "has left the room"}, to=room)
-    print(f"{name} has left the room {room}")
-    
-    # Update session end time in the database
+        if name in rooms[room]['sids']:
+            rooms[room]['sids'][name].remove(request.sid)
+            if not rooms[room]['sids'][name]:
+                del rooms[room]['sids'][name]
+                rooms[room]["members"] -= 1
+                if rooms[room]["members"] <= 0:
+                    del rooms[room]
+        send({"name": name, "message": "has left the room"}, to=room)
+        print(f"{name} has left the room {room}")
+
     try:
         session_entry = RaumSitzung.query.filter_by(raum=room, name=name).order_by(RaumSitzung.beitrittszeit.desc()).first()
         if session_entry:
