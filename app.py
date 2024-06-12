@@ -390,19 +390,28 @@ def handle_end_attack():
                     emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=sid)
 
             # Der Verteidiger bleibt Verteidiger, der nächste Spieler wird neuer Angreifer
-            if rooms[room]['hands'][current_player]:
-                players = [player for player in rooms[room]['hands'] if rooms[room]['hands'][player]]
-                current_index = players.index(current_player)
-                next_index = (current_index + 1) % len(players)
-                rooms[room]['current_player'] = players[next_index]
+            if len(rooms[room]['hands']) == 1:
+                # Letzter verbleibender Spieler wird als Verlierer deklariert
+                for player in rooms[room]['hands']:
+                    if player not in rooms[room]['placements']:
+                        rooms[room]['placements'][player] = 'Verlierer'
+                        emit('message', {'name': 'System', 'message': f'{player} ist der Verlierer!'}, room=room)
+                emit('game_over', {'placements': rooms[room]['placements']}, room=room)
+                rooms[room]['game_started'] = False
             else:
-                players = [player for player in rooms[room]['hands'] if rooms[room]['hands'][player]]
-                defender_index = players.index(defender)
-                next_index = (defender_index + 1) % len(players)
-                rooms[room]['current_player'] = players[next_index]
+                if rooms[room]['hands'][current_player]:
+                    players = [player for player in rooms[room]['hands'] if rooms[room]['hands'][player]]
+                    current_index = players.index(current_player)
+                    next_index = (current_index + 1) % len(players)
+                    rooms[room]['current_player'] = players[next_index]
+                else:
+                    players = [player for player in rooms[room]['hands'] if rooms[room]['hands'][player]]
+                    defender_index = players.index(defender)
+                    next_index = (defender_index + 1) % len(players)
+                    rooms[room]['current_player'] = players[next_index]
 
-            emit('update_current_player', {'current_player': rooms[room]['current_player']}, room=room)
-            emit('message', {'name': 'System', 'message': f'{name} hat den Angriff beendet. Nächster Spieler ist {rooms[room]["current_player"]}.'}, room=room)
+                emit('update_current_player', {'current_player': rooms[room]['current_player']}, room=room)
+                emit('message', {'name': 'System', 'message': f'{name} hat den Angriff beendet. Nächster Spieler ist {rooms[room]["current_player"]}.'}, room=room)
 
             check_winner(room)
         else:
@@ -436,11 +445,20 @@ def handle_take_cards():
                 for sid in rooms[room]['sids'][player]:
                     emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=sid)
 
-            # Verteidiger bleibt Verteidiger, der nächste Spieler nach dem Verteidiger wird neuer Angreifer
-            next_index = (players.index(defender) + 1) % len(players)
-            rooms[room]['current_player'] = players[next_index]
+            if len(rooms[room]['hands']) == 1:
+                # Letzter verbleibender Spieler wird als Verlierer deklariert
+                for player in rooms[room]['hands']:
+                    if player not in rooms[room]['placements']:
+                        rooms[room]['placements'][player] = 'Verlierer'
+                        emit('message', {'name': 'System', 'message': f'{player} ist der Verlierer!'}, room=room)
+                emit('game_over', {'placements': rooms[room]['placements']}, room=room)
+                rooms[room]['game_started'] = False
+            else:
+                # Verteidiger bleibt Verteidiger, der nächste Spieler nach dem Verteidiger wird neuer Angreifer
+                next_index = (players.index(defender) + 1) % len(players)
+                rooms[room]['current_player'] = players[next_index]
 
-            emit('update_current_player', {'current_player': rooms[room]['current_player']}, room=room)
+                emit('update_current_player', {'current_player': rooms[room]['current_player']}, room=room)
 
             check_winner(room)
         else:
