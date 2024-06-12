@@ -8,11 +8,6 @@ from datetime import datetime
 import os
 from flask_bcrypt import Bcrypt
 import sys
-from flask import Flask, render_template, request, redirect, url_for, flash
-from flask_migrate import Migrate
-import random
-from string import ascii_uppercase
-from datetime import datetime
 from functools import wraps
 
 # Füge das aktuelle Verzeichnis und das Elterndirektorium zum Python-Pfad hinzu
@@ -32,7 +27,6 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'None'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SESSION_COOKIE_SECURE'] = True
 
-
 db.init_app(app)
 migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
@@ -40,8 +34,6 @@ socketio = SocketIO(app)
 
 with app.app_context():
     db.create_all()
-
-
 
 # login and registration handling
 def login_required(f):
@@ -118,7 +110,6 @@ def generate_unique_code(length):
     
     return code
 
-
 # game handling
 def generate_trumpf():
     return random.choice(['C', 'D', 'H', 'S'])
@@ -163,7 +154,7 @@ def multiplayer():
             room = generate_unique_code(4)
             trumpf = generate_trumpf()
             deck = generate_deck()
-            rooms[room] = {"members": 0, "trumpf": trumpf, "deck": deck, "hands": {}, "game_started": False, "draw_pile": [], "sids": {}}
+            rooms[room] = {"members": 0, "trumpf": trumpf, "deck": deck, "hands": {}, "game_started": False, "draw_pile": [], "sids": {}, "placements": {}, "current_player": None}
 
         elif code not in rooms:
             return render_template("multiplayer.html", error="Room does not exist.", code=code, name=name)
@@ -240,8 +231,6 @@ def handle_start_game():
         emit('start_player', {'player': player_with_lowest_trump}, room=room)
         print(f"Game started in room {room} with player {player_with_lowest_trump}")
 
-
-
 @socketio.on('join')
 def on_join(data):
     room = session.get('room')
@@ -258,24 +247,21 @@ def on_join(data):
             join_room(room)
 
 def check_winner(room):
-    if 'placements' not in rooms[room]:
-        rooms[room]['placements'] = {}
-
     players_with_no_cards = [player for player, hand in rooms[room]['hands'].items() if not hand]
     if players_with_no_cards:
         for player in players_with_no_cards:
             if player not in rooms[room]['placements']:
                 rooms[room]['placements'][player] = len(rooms[room]['placements']) + 1
                 emit('message', {'name': 'System', 'message': f'{player} hat Platz {rooms[room]["placements"][player]} belegt!'}, room=room)
+                rooms[room]['hands'].pop(player)
 
-        if len(rooms[room]['placements']) == len(rooms[room]['hands']) - 1:
+        if len(rooms[room]['placements']) == rooms[room]['members'] - 1:
             for player in rooms[room]['hands']:
                 if player not in rooms[room]['placements']:
                     rooms[room]['placements'][player] = 'Verlierer'
                     emit('message', {'name': 'System', 'message': f'{player} ist der Verlierer!'}, room=room)
             emit('game_over', {'placements': rooms[room]['placements']}, room=room)
             rooms[room]['game_started'] = False
-
 
 @socketio.on('play_card')
 def handle_play_card(data):
@@ -288,14 +274,12 @@ def handle_play_card(data):
 
         card = {'rank': data['rank'], 'suit': data['suit']}
         current_player = rooms[room]['current_player']
-        players = list(rooms[room]['hands'].keys())
+        players = [player for player in rooms[room]['hands'] if rooms[room]['hands'][player]]
+        if current_player not in players:
+            current_player = players[0]  # Setze einen gültigen aktuellen Spieler, falls der aktuelle Spieler nicht mehr Karten hat
+            rooms[room]['current_player'] = current_player
         defender_index = (players.index(current_player) + 1) % len(players)
         defender = players[defender_index]
-
-        # Finden Sie den nächsten Spieler mit Karten als Verteidiger
-        while not rooms[room]['hands'].get(defender, None) and defender_index != players.index(current_player):
-            defender_index = (defender_index + 1) % len(players)
-            defender = players[defender_index]
 
         if card in rooms[room]['hands'][name]:
             if name == current_player:
@@ -342,9 +326,6 @@ def handle_play_card(data):
         else:
             emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=request.sid)
 
-
-
-
 @socketio.on('overplay_card')
 def handle_overplay_card(data):
     room = session.get('room')
@@ -355,8 +336,12 @@ def handle_overplay_card(data):
             return
 
         current_player = rooms[room]['current_player']
-        players = list(rooms[room]['hands'].keys())
-        defender = players[(players.index(current_player) + 1) % len(players)]
+        players = [player for player in rooms[room]['hands'] if rooms[room]['hands'][player]]
+        if current_player not in players:
+            current_player = players[0]  # Setze einen gültigen aktuellen Spieler, falls der aktuelle Spieler nicht mehr Karten hat
+            rooms[room]['current_player'] = current_player
+        defender_index = (players.index(current_player) + 1) % len(players)
+        defender = players[defender_index]
         card = {'rank': data['rank'], 'suit': data['suit']}
         target_index = data.get('target_index')
         trumpf = rooms[room]['trumpf']
@@ -385,8 +370,6 @@ def handle_overplay_card(data):
         else:
             emit('message', {'name': 'System', 'message': 'Nur der Verteidiger darf Karten überlagern.'}, room=request.sid)
 
-
-
 @socketio.on('end_attack')
 def handle_end_attack():
     room = session.get('room')
@@ -410,7 +393,7 @@ def handle_end_attack():
                     emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=sid)
 
             # Der Angreifer bleibt der gleiche, der nächste Spieler wird neuer Angreifer
-            players = list(rooms[room]['hands'].keys())
+            players = [player for player in rooms[room]['hands'] if rooms[room]['hands'][player]]
             current_index = players.index(current_player)
             next_index = (current_index + 1) % len(players)
             rooms[room]['current_player'] = players[next_index]
@@ -421,15 +404,18 @@ def handle_end_attack():
         else:
             emit('message', {'name': 'System', 'message': 'Nur der Angreifer kann den Angriff beenden.'}, room=request.sid)
 
-
 @socketio.on('take_cards')
 def handle_take_cards():
     room = session.get('room')
     name = session.get('name')
     if room and name:
         current_player = rooms[room]['current_player']
-        players = list(rooms[room]['hands'].keys())
-        defender = players[(players.index(current_player) + 1) % len(players)]
+        players = [player for player in rooms[room]['hands'] if rooms[room]['hands'][player]]
+        if current_player not in players:
+            current_player = players[0]  # Setze einen gültigen aktuellen Spieler, falls der aktuelle Spieler nicht mehr Karten hat
+            rooms[room]['current_player'] = current_player
+        defender_index = (players.index(current_player) + 1) % len(players)
+        defender = players[defender_index]
 
         if name == defender:
             if 'played_cards' in rooms[room] and all(len(group) == 2 for group in rooms[room]['played_cards']):
@@ -458,13 +444,6 @@ def handle_take_cards():
             check_winner(room)
         else:
             emit('message', {'name': 'System', 'message': 'Nur der Verteidiger kann die Karten nehmen.'}, room=request.sid)
-
-
-
-
-
-
-
 
 # session handling
 @socketio.on("connect")
@@ -535,7 +514,6 @@ def check_db():
         'beitrittszeit': session.beitrittszeit,
         'verlasszeit': session.verlasszeit
     } for session in sessions])
-
 
 if __name__ == "__main__":
     socketio.run(app, debug=True)
