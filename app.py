@@ -214,6 +214,8 @@ def handle_start_game():
             if player in rooms[room]['sids']:
                 for sid in rooms[room]['sids'][player]:
                     emit('update_hand', {'hand': hand}, room=sid)
+            else:
+                print(f"Fehler: Spieler {player} nicht in rooms[room]['sids'] gefunden.")
 
         # Ermittlung des Startspielers
         trumpf = rooms[room]['trumpf']
@@ -242,14 +244,15 @@ def on_join(data):
     room = session.get('room')
     name = session.get('name')
     if room and name:
-        join_room(room)
-        rooms[room]['members'] += 1
-        if name not in rooms[room]['hands']:
-            rooms[room]['hands'][name] = []
         if name not in rooms[room]['sids']:
-            rooms[room]['sids'][name] = []
-        rooms[room]['sids'][name].append(request.sid)
-        emit('message', {'name': name, 'message': 'has entered the gameroom'}, room=room)
+            join_room(room)
+            rooms[room]['members'] += 1
+            rooms[room]['hands'][name] = []
+            rooms[room]['sids'][name] = [request.sid]
+            emit('message', {'name': name, 'message': 'has entered the gameroom'}, room=room)
+        elif request.sid not in rooms[room]['sids'][name]:
+            rooms[room]['sids'][name].append(request.sid)
+            join_room(room)
 
 
 
@@ -333,24 +336,29 @@ def handle_end_attack():
     if room and name:
         current_player = rooms[room]['current_player']
         if name == current_player:
-            if 'played_cards' in rooms[room] and rooms[room]['played_cards']:
+            # Überprüfen, ob alle Karten geschlagen wurden
+            all_beaten = all(len(group) == 2 for group in rooms[room]['played_cards'])
+
+            if all_beaten:
                 rooms[room]['played_cards'] = []
                 emit('clear_played_cards', room=room)
 
-            # Nachziehen der Karten für alle Spieler
-            for player in rooms[room]['hands']:
-                while len(rooms[room]['hands'][player]) < 6 and rooms[room]['draw_pile']:
-                    rooms[room]['hands'][player].append(rooms[room]['draw_pile'].pop())
-                for sid in rooms[room]['sids'][player]:
-                    emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=sid)
+                # Nachziehen der Karten für alle Spieler
+                for player in rooms[room]['hands']:
+                    while len(rooms[room]['hands'][player]) < 6 and rooms[room]['draw_pile']:
+                        rooms[room]['hands'][player].append(rooms[room]['draw_pile'].pop())
+                    for sid in rooms[room]['sids'][player]:
+                        emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=sid)
 
-            # Der Angreifer bleibt der gleiche, der nächste Spieler wird neuer Angreifer
-            players = list(rooms[room]['hands'].keys())
-            current_index = players.index(current_player)
-            next_index = (current_index + 1) % len(players)
-            rooms[room]['current_player'] = players[next_index]
-            emit('update_current_player', {'current_player': rooms[room]['current_player']}, room=room)
-            emit('message', {'name': 'System', 'message': f'{name} hat den Angriff beendet. Nächster Spieler ist {rooms[room]["current_player"]}.'}, room=room)
+                # Der Angreifer bleibt der gleiche, der nächste Spieler wird neuer Angreifer
+                players = list(rooms[room]['hands'].keys())
+                current_index = players.index(current_player)
+                next_index = (current_index + 1) % len(players)
+                rooms[room]['current_player'] = players[next_index]
+                emit('update_current_player', {'current_player': rooms[room]['current_player']}, room=room)
+                emit('message', {'name': 'System', 'message': f'{name} hat den Angriff beendet. Nächster Spieler ist {rooms[room]["current_player"]}.'}, room=room)
+            else:
+                emit('message', {'name': 'System', 'message': 'Du kannst den Angriff nicht beenden, wenn nicht alle Karten geschlagen wurden.'}, room=request.sid)
         else:
             emit('message', {'name': 'System', 'message': 'Nur der Angreifer kann den Angriff beenden.'}, room=request.sid)
 
@@ -366,26 +374,33 @@ def handle_take_cards():
         next_index = (current_index + 1) % len(players)
 
         if name != current_player:
-            # Verteidiger nimmt die Karten
-            rooms[room]['hands'][name].extend([card for group in rooms[room]['played_cards'] for card in group])
-            rooms[room]['played_cards'] = []
-            emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
-            emit('clear_played_cards', room=room)
-            emit('message', {'name': 'System', 'message': f'{name} hat die Karten genommen.'}, room=room)
+            # Überprüfen, ob alle Karten geschlagen wurden
+            all_beaten = all(len(group) == 2 for group in rooms[room]['played_cards'])
 
-            # Nachziehen der Karten für alle Spieler
-            for player in rooms[room]['hands']:
-                while len(rooms[room]['hands'][player]) < 6 and rooms[room]['draw_pile']:
-                    rooms[room]['hands'][player].append(rooms[room]['draw_pile'].pop())
-                for sid in rooms[room]['sids'][player]:
-                    emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=sid)
+            if all_beaten:
+                emit('message', {'name': 'System', 'message': 'Alle Karten wurden bereits geschlagen. Du kannst keine Karten nehmen.'}, room=request.sid)
+            else:
+                # Verteidiger nimmt die Karten
+                rooms[room]['hands'][name].extend([card for group in rooms[room]['played_cards'] for card in group])
+                rooms[room]['played_cards'] = []
+                emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
+                emit('clear_played_cards', room=room)
+                emit('message', {'name': 'System', 'message': f'{name} hat die Karten genommen.'}, room=room)
 
-            # Der Angreifer bleibt der gleiche, der nächste Spieler nach dem Verteidiger wird neuer Angreifer
-            next_index = (next_index + 1) % len(players)  # Skip the current defender
-            rooms[room]['current_player'] = players[next_index]
-            emit('update_current_player', {'current_player': rooms[room]['current_player']}, room=room)
+                # Nachziehen der Karten für alle Spieler
+                for player in rooms[room]['hands']:
+                    while len(rooms[room]['hands'][player]) < 6 and rooms[room]['draw_pile']:
+                        rooms[room]['hands'][player].append(rooms[room]['draw_pile'].pop())
+                    for sid in rooms[room]['sids'][player]:
+                        emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=sid)
+
+                # Der Angreifer bleibt der gleiche, der nächste Spieler nach dem Verteidiger wird neuer Angreifer
+                next_index = (next_index + 1) % len(players)  # Skip the current defender
+                rooms[room]['current_player'] = players[next_index]
+                emit('update_current_player', {'current_player': rooms[room]['current_player']}, room=room)
         else:
             emit('message', {'name': 'System', 'message': 'Der Angreifer kann die Karten nicht nehmen.'}, room=request.sid)
+
 
 
 
@@ -402,12 +417,17 @@ def connect(auth):
     if room not in rooms or rooms[room].get('game_started', False):
         emit('redirect', {'url': url_for('multiplayer')})
         return
-    
-    join_room(room)
-    send({"name": name, "message": "has entered the gameroom"}, to=room)
-    rooms[room]["members"] += 1
-    print(f"{name} joined room {room}")
-    
+
+    if name not in rooms[room]['sids']:
+        join_room(room)
+        rooms[room]['sids'][name] = [request.sid]
+        rooms[room]['members'] += 1
+        send({"name": name, "message": "has entered the gameroom"}, to=room)
+        print(f"{name} joined room {room}")
+    elif request.sid not in rooms[room]['sids'][name]:
+        rooms[room]['sids'][name].append(request.sid)
+        join_room(room)
+
     # Add session entry to the database
     try:
         new_session = RaumSitzung(raum=room, name=name)
@@ -416,6 +436,7 @@ def connect(auth):
     except Exception as e:
         db.session.rollback()
         print(f"Error adding session to the database: {e}")
+
 
 @socketio.on("disconnect")
 def disconnect():

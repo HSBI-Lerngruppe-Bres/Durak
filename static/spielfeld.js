@@ -1,5 +1,4 @@
 // spielfeld.js
-
 // Define the playCard function
 const playCard = (rank, suit) => {
   socketio.emit('play_card', { rank, suit });
@@ -9,10 +8,11 @@ const playCard = (rank, suit) => {
 var socketio = io();
 
 document.addEventListener('DOMContentLoaded', (event) => {
-  socketio.emit('join', {});
+  if (!sessionStorage.getItem('joined')) {
+    socketio.emit('join', {});
+    sessionStorage.setItem('joined', 'true');
+  }
   
-  addEventListeners();
-
   document.getElementById('start-game-btn').addEventListener("click", function() {
     socketio.emit('start_game');
   });
@@ -200,9 +200,6 @@ socketio.on('update_hand', (data) => {
       cardDiv.appendChild(img);
       deckDiv.appendChild(cardDiv);
   });
-
-  // Event-Listener für alle Karten hinzufügen
-  addEventListeners();
 });
 
 // Neuer Event-Listener für die überlagerte Karte
@@ -269,88 +266,88 @@ const handleDragEnter = (event) => {
   if (element.classList.contains('card-button') || element.classList.contains('card')) {
       element.classList.add('highlight');
       const rank = element.dataset.rank;
-      const suit = element.dataset.suit;
+      const suit = element.dataset.suit
       console.log(`Drag Enter: Rank: ${rank}, Suit: ${suit}`);
-  }
-};
-
-const handleDragOver = (event) => {
-  event.preventDefault();
-  let element = event.target;
-  if (element.tagName === 'IMG') {
-      element = element.parentElement; // Get the button element if the target is the image
-  }
-  if (element.classList.contains('card-button') || element.classList.contains('card')) {
-      const rank = element.dataset.rank;
-      const suit = element.dataset.suit;
-      console.log(`Drag Over: Rank: ${rank}, Suit: ${suit}`);
-  }
-};
-
-const handleDragLeave = (event) => {
-  let element = event.target;
-  if (element.tagName === 'IMG') {
-      element = element.parentElement; // Get the button element if the target is the image
-  }
-  if (element.classList.contains('card-button') || element.classList.contains('card')) {
-      element.classList.remove('highlight');
-      const rank = element.dataset.rank;
-      const suit = element.dataset.suit;
-      console.log(`Drag Leave: Rank: ${rank}, Suit: ${suit}`);
-  }
-};
-
-const handleDrop = (event) => {
-  event.preventDefault();
-  const data = event.dataTransfer.getData('text/plain');
-  const [draggedRank, draggedSuit] = data.split('-');
-  console.log(`Drop: Rank: ${draggedRank}, Suit: ${draggedSuit}`);
+    }
+  };
   
-  let element = event.target;
-  if (element.tagName === 'IMG') {
-      element = element.parentElement; // Get the button element if the target is the image
-  }
-  if (element.classList.contains('card-button') || element.classList.contains('card')) {
-      element.classList.remove('highlight');
-      
-      // Zielkarteninformationen extrahieren
-      const targetRank = element.dataset.rank;
-      const targetSuit = element.dataset.suit;
-      
-      console.log(`Karte ${draggedRank}${draggedSuit} wurde auf ${targetRank}${targetSuit} gelegt`);
-      
-      // Überprüfen, ob die Karte aus der Hand des Spielers stammt
-      const deckDiv = document.getElementById('deck');
-      const isFromHand = Array.from(deckDiv.children).some(card => card.dataset.rank === draggedRank && card.dataset.suit === draggedSuit);
-
-      if (isFromHand) {
-          // Überlagerungskarte an den Server senden
-          socketio.emit('overplay_card', { rank: draggedRank, suit: draggedSuit, target_index: [...element.parentElement.children].indexOf(element) });
-      } else {
-          console.log('Die Karte stammt nicht aus der Hand des Spielers und kann nicht erneut verwendet werden.');
-      }
-  } else {
-      console.log('Drop-Ziel ist keine Karte');
-  }
-};
-
-// Event-Listener hinzufügen
-const addEventListeners = () => {
-  const cards = document.querySelectorAll('.card-button, .card');
-  cards.forEach(card => {
-      card.addEventListener('dragstart', handleDragStart);
-      card.addEventListener('dragend', handleDragEnd);
-      card.addEventListener('dragenter', handleDragEnter);
-      card.addEventListener('dragover', handleDragOver);
-      card.addEventListener('dragleave', handleDragLeave);
-      card.addEventListener('drop', handleDrop);
+  const handleDragOver = (event) => {
+    event.preventDefault();
+    let element = event.target;
+    if (element.tagName === 'IMG') {
+        element = element.parentElement; // Get the button element if the target is the image
+    }
+    if (element.classList.contains('card-button') || element.classList.contains('card')) {
+        const rank = element.dataset.rank;
+        const suit = element.dataset.suit;
+        console.log(`Drag Over: Rank: ${rank}, Suit: ${suit}`);
+    }
+  };
+  
+  const handleDragLeave = (event) => {
+    let element = event.target;
+    if (element.tagName === 'IMG') {
+        element = element.parentElement; // Get the button element if the target is the image
+    }
+    if (element.classList.contains('card-button') || element.classList.contains('card')) {
+        element.classList.remove('highlight');
+        const rank = element.dataset.rank;
+        const suit = element.dataset.suit;
+        console.log(`Drag Leave: Rank: ${rank}, Suit: ${suit}`);
+    }
+  };
+  
+  const handleDrop = (event) => {
+    event.preventDefault();
+    const data = event.dataTransfer.getData('text/plain');
+    const [draggedRank, draggedSuit] = data.split('-');
+    console.log(`Drop: Rank: ${draggedRank}, Suit: ${draggedSuit}`);
+    
+    let element = event.target;
+    if (element.tagName === 'IMG') {
+        element = element.parentElement; // Get the button element if the target is the image
+    }
+    if (element.classList.contains('card-button') || element.classList.contains('card')) {
+        element.classList.remove('highlight');
+        
+        // Zielkarteninformationen extrahieren
+        const targetRank = element.dataset.rank;
+        const targetSuit = element.dataset.suit;
+        
+        console.log(`Karte ${draggedRank}${draggedSuit} wurde auf ${targetRank}${targetSuit} gelegt`);
+        
+        // Überprüfen, ob die Karte aus der Hand des Spielers stammt
+        const deckDiv = document.getElementById('deck');
+        const isFromHand = Array.from(deckDiv.children).some(card => card.dataset.rank === draggedRank && card.dataset.suit === draggedSuit);
+  
+        if (isFromHand) {
+            // Überlagerungskarte an den Server senden
+            socketio.emit('overplay_card', { rank: draggedRank, suit: draggedSuit, target_index: [...element.parentElement.children].indexOf(element) });
+        } else {
+            console.log('Die Karte stammt nicht aus der Hand des Spielers und kann nicht erneut verwendet werden.');
+        }
+    } else {
+        console.log('Drop-Ziel ist keine Karte');
+    }
+  };
+  
+  // Event-Listener hinzufügen
+  const addEventListeners = () => {
+    const cards = document.querySelectorAll('.card-button, .card');
+    cards.forEach(card => {
+        card.addEventListener('dragstart', handleDragStart);
+        card.addEventListener('dragend', handleDragEnd);
+        card.addEventListener('dragenter', handleDragEnter);
+        card.addEventListener('dragover', handleDragOver);
+        card.addEventListener('dragleave', handleDragLeave);
+        card.addEventListener('drop', handleDrop);
+    });
+  };
+  
+  // Initialisieren Sie die Drop-Ziele beim Laden der Seite
+  document.querySelectorAll('#played-cards .card').forEach(card => {
+    card.addEventListener('dragenter', handleDragEnter);
+    card.addEventListener('dragover', handleDragOver);
+    card.addEventListener('dragleave', handleDragLeave);
+    card.addEventListener('drop', handleDrop);
   });
-};
-
-// Initialisieren Sie die Drop-Ziele beim Laden der Seite
-document.querySelectorAll('#played-cards .card').forEach(card => {
-  card.addEventListener('dragenter', handleDragEnter);
-  card.addEventListener('dragover', handleDragOver);
-  card.addEventListener('dragleave', handleDragLeave);
-  card.addEventListener('drop', handleDrop);
-});
