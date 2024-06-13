@@ -40,6 +40,7 @@ const createMessage = (name, msg) => {
   </div>
   `;
   messages.innerHTML += content;
+  messages.scrollTop = messages.scrollHeight;
 };
 
 socketio.on("message", (data) => {
@@ -182,6 +183,18 @@ socketio.on('update_hand', (data) => {
   const hand = data.hand;
   const deckDiv = document.getElementById('deck');
   deckDiv.innerHTML = '';
+
+  // Sortierfunktion
+  hand.sort((a, b) => {
+    const rankOrder = ['6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+    const suitOrder = ['C', 'D', 'H', 'S'];
+    const rankComparison = rankOrder.indexOf(a.rank) - rankOrder.indexOf(b.rank);
+    if (rankComparison === 0) {
+      return suitOrder.indexOf(a.suit) - suitOrder.indexOf(b.suit);
+    }
+    return rankComparison;
+  });
+
   hand.forEach(card => {
       const cardDiv = document.createElement('button');
       cardDiv.className = 'card-button';
