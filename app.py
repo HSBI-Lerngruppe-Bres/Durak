@@ -264,7 +264,6 @@ def check_winner(room):
                     emit('message', {'name': 'System', 'message': f'{player} ist der Verlierer!'}, room=room)
             emit('game_over', {'placements': rooms[room]['placements']}, room=room)
             rooms[room]['game_started'] = False
-
 @socketio.on('play_card')
 def handle_play_card(data):
     room = session.get('room')
@@ -285,7 +284,6 @@ def handle_play_card(data):
                     rooms[room]['played_cards'] = []
 
                 if len(rooms[room]['played_cards']) < len(rooms[room]['hands'][defender]):
-                    # Prüfen, ob der Angreifer nur Karten des gleichen Rangs spielt
                     if rooms[room].get('played_cards'):
                         valid_ranks = {c['rank'] for group in rooms[room]['played_cards'] for c in group}
                         if card['rank'] not in valid_ranks:
@@ -302,7 +300,6 @@ def handle_play_card(data):
                 else:
                     emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nicht mehr Karten spielen, als der Verteidiger Karten hat.'}, room=request.sid)
             else:
-                # Logik für Mitangreifer
                 if name != defender:
                     if 'played_cards' in rooms[room] and rooms[room]['played_cards']:
                         valid_ranks = {c['rank'] for group in rooms[room]['played_cards'] for c in group}
@@ -340,7 +337,7 @@ def handle_overplay_card(data):
         target_index = data.get('target_index')
         trumpf = rooms[room]['trumpf']
 
-        if name == defender:  # Nur der Verteidiger darf Karten überlagern
+        if name == defender:
             if target_index is not None and 0 <= target_index < len(rooms[room]['played_cards']):
                 if card in rooms[room]['hands'][name]:
                     target_card = rooms[room]['played_cards'][target_index][-1]
@@ -382,16 +379,14 @@ def handle_end_attack():
                 rooms[room]['played_cards'] = []
                 emit('clear_played_cards', room=room)
 
-            # Nachziehen der Karten für alle Spieler
             for player in rooms[room]['hands']:
                 while len(rooms[room]['hands'][player]) < 6 and rooms[room]['draw_pile']:
                     rooms[room]['hands'][player].append(rooms[room]['draw_pile'].pop())
                 for sid in rooms[room]['sids'][player]:
                     emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=sid)
 
-            # Der Verteidiger bleibt Verteidiger, der nächste Spieler wird neuer Angreifer
-            if len(rooms[room]['hands']) == 1:
-                # Letzter verbleibender Spieler wird als Verlierer deklariert
+            players = [player for player in rooms[room]['hands'] if rooms[room]['hands'][player]]
+            if len(players) == 1:
                 for player in rooms[room]['hands']:
                     if player not in rooms[room]['placements']:
                         rooms[room]['placements'][player] = 'Verlierer'
@@ -399,16 +394,12 @@ def handle_end_attack():
                 emit('game_over', {'placements': rooms[room]['placements']}, room=room)
                 rooms[room]['game_started'] = False
             else:
-                if rooms[room]['hands'][current_player]:
-                    players = [player for player in rooms[room]['hands'] if rooms[room]['hands'][player]]
-                    current_index = players.index(current_player)
-                    next_index = (current_index + 1) % len(players)
-                    rooms[room]['current_player'] = players[next_index]
-                else:
-                    players = [player for player in rooms[room]['hands'] if rooms[room]['hands'][player]]
-                    defender_index = players.index(defender)
-                    next_index = (defender_index + 1) % len(players)
-                    rooms[room]['current_player'] = players[next_index]
+                current_index = players.index(current_player)
+                next_index = (current_index + 1) % len(players)
+                rooms[room]['current_player'] = players[next_index]
+
+                defender_index = (next_index + 1) % len(players)
+                rooms[room]['defender'] = players[defender_index]
 
                 emit('update_current_player', {'current_player': rooms[room]['current_player']}, room=room)
                 emit('message', {'name': 'System', 'message': f'{name} hat den Angriff beendet. Nächster Spieler ist {rooms[room]["current_player"]}.'}, room=room)
@@ -431,22 +422,19 @@ def handle_take_cards():
                 emit('message', {'name': 'System', 'message': 'Du hast alle Karten geschlagen. Du kannst die Karten nicht nehmen.'}, room=request.sid)
                 return
 
-            # Verteidiger nimmt die Karten
             rooms[room]['hands'][name].extend([card for group in rooms[room]['played_cards'] for card in group])
             rooms[room]['played_cards'] = []
             emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
             emit('clear_played_cards', room=room)
             emit('message', {'name': 'System', 'message': f'{name} hat die Karten genommen.'}, room=room)
 
-            # Nachziehen der Karten für alle Spieler
             for player in rooms[room]['hands']:
                 while len(rooms[room]['hands'][player]) < 6 and rooms[room]['draw_pile']:
                     rooms[room]['hands'][player].append(rooms[room]['draw_pile'].pop())
                 for sid in rooms[room]['sids'][player]:
                     emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=sid)
 
-            if len(rooms[room]['hands']) == 1:
-                # Letzter verbleibender Spieler wird als Verlierer deklariert
+            if len(players) == 1:
                 for player in rooms[room]['hands']:
                     if player not in rooms[room]['placements']:
                         rooms[room]['placements'][player] = 'Verlierer'
@@ -454,11 +442,14 @@ def handle_take_cards():
                 emit('game_over', {'placements': rooms[room]['placements']}, room=room)
                 rooms[room]['game_started'] = False
             else:
-                # Verteidiger bleibt Verteidiger, der nächste Spieler nach dem Verteidiger wird neuer Angreifer
                 next_index = (players.index(defender) + 1) % len(players)
                 rooms[room]['current_player'] = players[next_index]
 
+                defender_index = (next_index + 1) % len(players)
+                rooms[room]['defender'] = players[defender_index]
+
                 emit('update_current_player', {'current_player': rooms[room]['current_player']}, room=room)
+                emit('message', {'name': 'System', 'message': f'{name} hat die Karten genommen. Nächster Spieler ist {rooms[room]["current_player"]}.'}, room=room)
 
             check_winner(room)
         else:
