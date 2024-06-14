@@ -40,8 +40,11 @@
         </div>
         
         <div class="link-container">
-            <div id="copy-link-icon" onclick="showModal()" title="Kopiere Link">
+            <div id="copy-link-icon" onclick="showModal('link')" title="Kopiere Link">
                 <img src="{{ url_for('static', filename='images/link-hyperlink-color-icon.svg') }}" alt="Link Icon">
+            </div>
+            <div id="info-icon" onclick="showModal('info')" title="Rolleninformationen">
+                <img src="{{ url_for('static', filename='images/info_icon.png') }}" alt="Info Icon">
             </div>
         </div>
 
@@ -69,17 +72,40 @@
         <div class="modal-content">
             <span class="close-button" onclick="closeModal()">&times;</span>
             <p id="modal-text"></p>
+            <div id="role-explanation" style="display: none;">
+                <div class="role-explanation-item">
+                    <div class="role-color angreifer"></div>
+                    <p>Grün - Angreifer</p>
+                </div>
+                <div class="role-explanation-item">
+                    <div class="role-color mitangreifer"></div>
+                    <p>Gelb - Mitangreifer</p>
+                </div>
+                <div class="role-explanation-item">
+                    <div class="role-color verteidiger"></div>
+                    <p>Rot - Verteidiger</p>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        function showModal() {
-            const roomCode = '{{ code }}';
-            const link = `${window.location.origin}/room/${roomCode}`;
-            navigator.clipboard.writeText(link).then(() => {
-                document.getElementById('modal-text').innerText = 'Link kopiert: ' + link;
-                document.getElementById('modal').style.display = 'block';
-            });
+        function showModal(type) {
+            const modal = document.getElementById('modal');
+            const modalText = document.getElementById('modal-text');
+            const roleExplanation = document.getElementById('role-explanation');
+            if (type === 'link') {
+                const roomCode = '{{ code }}';
+                const link = `${window.location.origin}/room/${roomCode}`;
+                navigator.clipboard.writeText(link).then(() => {
+                    modalText.innerText = 'Link kopiert: ' + link;
+                    roleExplanation.style.display = 'none';
+                });
+            } else if (type === 'info') {
+                modalText.innerText = 'Rolleninformationen:';
+                roleExplanation.style.display = 'block';
+            }
+            modal.style.display = 'block';
         }
 
         function closeModal() {

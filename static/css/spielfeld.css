@@ -324,25 +324,28 @@ button#start-game-btn:hover, button#end-attack-btn:hover, button#take-cards-btn:
     position: absolute;
     top: 20px;
     right: 20px;
+    display: flex;
+    gap: 10px;
 }
 
-#copy-link-icon {
-    width: 50px;
-    height: 50px;
+#copy-link-icon, #info-icon {
+    width: 30px; /* Kleinere Breite */
+    height: 30px; /* Kleinere Höhe */
     cursor: pointer;
     transition: transform 0.3s;
 }
 
-#copy-link-icon img {
-    width: 100%;
-    height: 100%;
+#copy-link-icon img, #info-icon img {
+    width: 100%; /* Bild passt sich an die Breite des Containers an */
+    height: 100%; /* Bild passt sich an die Höhe des Containers an */
+    object-fit: contain; /* Beibehaltung des Seitenverhältnisses */
 }
 
-#copy-link-icon:hover {
+#copy-link-icon:hover, #info-icon:hover {
     transform: scale(1.2) rotate(20deg);
 }
 
-#copy-link-icon:active {
+#copy-link-icon:active, #info-icon:active {
     transform: scale(1.1);
 }
 
@@ -350,7 +353,7 @@ button#start-game-btn:hover, button#end-attack-btn:hover, button#take-cards-btn:
 .modal {
     display: none;
     position: fixed;
-    z-index: 1;
+    z-index: 2;
     left: 0;
     top: 0;
     width: 100%;
@@ -397,20 +400,19 @@ button#start-game-btn:hover, button#end-attack-btn:hover, button#take-cards-btn:
     }
 }
 
-
 /* Rolle Information Overlay */
 .role-info {
     position: absolute;
     bottom: 0%; /* Verschiebt den Halbkreis weiter nach unten */
-    left: 52.7%;
+    left: 52%;
     transform: translateX(-50%);
     width: 500px; /* Vergrößert die Breite */
-    height: 250px; /* Vergrößert die Höhe */
+    height: 300px; /* Vergrößert die Höhe */
     border-radius: 150px 150px 0 0; /* Passt den Radius an die neue Höhe an */
     display: none;
     z-index: -1; /* Ändert den z-index, um sicherzustellen, dass es hinter den Händen angezeigt wird */
     text-align: center;
-    opacity: 0.21; /* Macht den Halbkreis durchsichtig */
+    opacity: 0.3; /* Macht den Halbkreis durchsichtig */
     animation: glow 1.5s infinite alternate;
 }
 
@@ -436,4 +438,29 @@ button#start-game-btn:hover, button#end-attack-btn:hover, button#take-cards-btn:
     to {
         box-shadow: 0 0 30px 10px rgba(0, 0, 0, 0.8);
     }
+}
+
+.role-explanation-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.role-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.role-color.angreifer {
+    background-color: green;
+}
+
+.role-color.mitangreifer {
+    background-color: yellow;
+}
+
+.role-color.verteidiger {
+    background-color: red;
 }
