@@ -16,12 +16,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
   const startGameBtn = document.getElementById('start-game-btn');
   startGameBtn.addEventListener("click", function() {
       socketio.emit('start_game');
-      startGameBtn.classList.add('fade-out'); // Fade-out-Klasse hinzufügen
+      startGameBtn.classList.add('fade-out');
       
       // Button nach der Transition komplett entfernen
       setTimeout(() => {
           startGameBtn.style.display = 'none';
-      }, 500); // Zeit sollte der Dauer der Transition entsprechen
+      }, 500);
   });
 
   document.getElementById('end-attack-btn').addEventListener("click", function() {
@@ -32,10 +32,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
       socketio.emit('take_cards');
   });
 
-  // Call this function to ensure the deck is updated
   socketio.emit('request_deck_update');
   
-  // Neuer Event-Listener für das Entfernen des Start-Buttons
   socketio.on('remove_start_button', () => {
       const startGameBtn = document.getElementById('start-game-btn');
       if (startGameBtn) {
@@ -45,7 +43,17 @@ document.addEventListener('DOMContentLoaded', (event) => {
           }, 500);
       }
   });
+
+  socketio.on('update_role', (data) => {
+      updateRole(data.role);
+  });
 });
+
+function updateRole(role) {
+  const roleInfo = document.getElementById('role-info');
+  roleInfo.className = 'role-info ' + role.toLowerCase();
+  roleInfo.style.display = 'block';
+}
 
 
 

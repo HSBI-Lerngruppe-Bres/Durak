@@ -345,3 +345,95 @@ button#start-game-btn:hover, button#end-attack-btn:hover, button#take-cards-btn:
 #copy-link-icon:active {
     transform: scale(1.1);
 }
+
+/* Modales Fenster */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgb(0, 0, 0);
+    background-color: rgba(0, 0, 0, 0.4);
+    padding-top: 60px;
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    animation: fadeIn 0.3s;
+}
+
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: #000;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+
+/* Rolle Information Overlay */
+.role-info {
+    position: absolute;
+    bottom: 0%; /* Verschiebt den Halbkreis weiter nach unten */
+    left: 52.7%;
+    transform: translateX(-50%);
+    width: 500px; /* Vergrößert die Breite */
+    height: 250px; /* Vergrößert die Höhe */
+    border-radius: 150px 150px 0 0; /* Passt den Radius an die neue Höhe an */
+    display: none;
+    z-index: -1; /* Ändert den z-index, um sicherzustellen, dass es hinter den Händen angezeigt wird */
+    text-align: center;
+    opacity: 0.21; /* Macht den Halbkreis durchsichtig */
+    animation: glow 1.5s infinite alternate;
+}
+
+.role-info.angreifer {
+    background: linear-gradient(to top, rgba(0, 255, 0, 0.8), rgba(0, 255, 0, 0.6));
+    box-shadow: 0 0 20px 5px rgba(0, 255, 0, 0.6);
+}
+
+.role-info.verteidiger {
+    background: linear-gradient(to top, rgba(255, 0, 0, 0.8), rgba(255, 0, 0, 0.6));
+    box-shadow: 0 0 20px 5px rgba(255, 0, 0, 0.6);
+}
+
+.role-info.mitangreifer {
+    background: linear-gradient(to top, rgba(255, 255, 0, 0.8), rgba(255, 255, 0, 0.6));
+    box-shadow: 0 0 20px 5px rgba(255, 255, 0, 0.6);
+}
+
+@keyframes glow {
+    from {
+        box-shadow: 0 0 20px 5px rgba(0, 0, 0, 0.8);
+    }
+    to {
+        box-shadow: 0 0 30px 10px rgba(0, 0, 0, 0.8);
+    }
+}

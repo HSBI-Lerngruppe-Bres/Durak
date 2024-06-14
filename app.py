@@ -131,6 +131,62 @@ def draw_cards(room):
             rooms[room]['hands'][player].append(rooms[room]['draw_pile'].pop())
             emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=player)
 
+
+@socketio.on('start_game')
+def handle_start_game():
+    room = session.get('room')
+    if room and room in rooms:
+        rooms[room]['game_started'] = True
+        emit('message', {'name': 'System', 'message': 'Das Spiel hat begonnen!'}, room=room)
+        emit('remove_start_button', room=room)
+
+        # Karten austeilen und andere Initialisierungen
+        for player in rooms[room]['hands']:
+            rooms[room]['hands'][player] = rooms[room]['deck'][:6]
+            rooms[room]['deck'] = rooms[room]['deck'][6:]
+
+        # Ziehstapel initialisieren
+        rooms[room]['draw_pile'] = rooms[room]['deck']
+        rooms[room]['deck'] = []
+
+        # Initialisieren der gespielten Karten
+        rooms[room]['played_cards'] = []
+
+        # Spieler über ihre Hände informieren
+        for player, hand in rooms[room]['hands'].items():
+            if player in rooms[room]['sids']:
+                for sid in rooms[room]['sids'][player]:
+                    emit('update_hand', {'hand': hand}, room=sid)
+
+        # Ermittlung des Startspielers
+        trumpf = rooms[room]['trumpf']
+        player_with_lowest_trump = None
+        lowest_trump_card = None
+
+        for player, hand in rooms[room]['hands'].items():
+            player_trumps = [card for card in hand if card['suit'] == trumpf]
+            if player_trumps:
+                player_lowest_trump = min(player_trumps, key=lambda card: rank_value(card['rank']))
+                if (lowest_trump_card is None or 
+                        rank_value(player_lowest_trump['rank']) < rank_value(lowest_trump_card['rank'])):
+                    lowest_trump_card = player_lowest_trump
+                    player_with_lowest_trump = player
+
+        if player_with_lowest_trump is None:
+            # Wenn keiner der Spieler eine Trumpfkarte hat, wählen wir zufällig einen Spieler
+            player_with_lowest_trump = random.choice(list(rooms[room]['hands'].keys()))
+        
+        rooms[room]['current_player'] = player_with_lowest_trump
+        defender_index = (list(rooms[room]['hands'].keys()).index(player_with_lowest_trump) + 1) % len(rooms[room]['hands'])
+        rooms[room]['defender'] = list(rooms[room]['hands'].keys())[defender_index]
+        emit('start_player', {'player': player_with_lowest_trump}, room=room)
+        print(f"Game started in room {room} with player {player_with_lowest_trump} as attacker and {rooms[room]['defender']} as defender")
+
+        # Update roles
+        update_roles(room)
+
+
+
 @app.route('/multiplayer', methods=['POST', 'GET'])
 def multiplayer():
     if request.method == 'POST':
@@ -184,55 +240,76 @@ def room():
 
     return render_template("spielfeld.html", code=room, trumpf=trumpf, deck=player_hand)
 
-@socketio.on('start_game')
-def handle_start_game():
+@socketio.on('play_card')
+def handle_play_card(data):
     room = session.get('room')
-    if room and room in rooms:
-        rooms[room]['game_started'] = True
-        emit('message', {'name': 'System', 'message': 'Das Spiel hat begonnen!'}, room=room)
-        emit('remove_start_button', room=room) 
+    name = session.get('name')
+    if room and name and room in rooms:
+        if not rooms[room].get('game_started', False):
+            emit('message', {'name': 'System', 'message': 'Das Spiel hat noch nicht begonnen. Bitte warten Sie, bis das Spiel gestartet ist.'}, room=request.sid)
+            return
 
-        # Karten austeilen
+        card = {'rank': data['rank'], 'suit': data['suit']}
+        current_player = rooms[room]['current_player']
+        defender = rooms[room]['defender']
+        players = [player for player in rooms[room]['hands'] if rooms[room]['hands'][player]]
+
+        if card in rooms[room]['hands'][name]:
+            if name == current_player:
+                if 'played_cards' not in rooms[room]:
+                    rooms[room]['played_cards'] = []
+
+                if len(rooms[room]['played_cards']) < len(rooms[room]['hands'][defender]):
+                    if rooms[room].get('played_cards'):
+                        valid_ranks = {c['rank'] for group in rooms[room]['played_cards'] for c in group}
+                        if card['rank'] not in valid_ranks:
+                            emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nur Karten des gleichen Rangs spielen.'}, room=request.sid)
+                            return
+
+                    rooms[room]['hands'][name].remove(card)
+                    rooms[room]['played_cards'].append([card])
+
+                    emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
+                    emit('card_played', {'rank': card['rank'], 'suit': card['suit'], 'player': name}, room=room)
+                    emit('update_played_cards', {'played_cards': rooms[room]['played_cards']}, room=room)
+                    check_winner(room)
+                else:
+                    emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nicht mehr Karten spielen, als der Verteidiger Karten hat.'}, room=request.sid)
+            else:
+                if name != defender:
+                    if 'played_cards' in rooms[room] and rooms[room]['played_cards']:
+                        valid_ranks = {c['rank'] for group in rooms[room]['played_cards'] for c in group}
+                        if card['rank'] in valid_ranks:
+                            if len(rooms[room]['played_cards']) < len(rooms[room]['hands'][defender]):
+                                rooms[room]['hands'][name].remove(card)
+                                rooms[room]['played_cards'].append([card])
+                                emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
+                                emit('card_played', {'rank': card['rank'], 'suit': card['suit'], 'player': name}, room=room)
+                                emit('update_played_cards', {'played_cards': rooms[room]['played_cards']}, room=room)
+                            else:
+                                emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nicht mehr Karten spielen, als der Verteidiger Karten hat.'}, room=request.sid)
+                        else:
+                            emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nur Karten des gleichen Rangs spielen.'}, room=request.sid)
+                    else:
+                        emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nur Karten des gleichen Rangs spielen.'}, room=request.sid)
+                else:
+                    emit('message', {'name': 'System', 'message': 'Verteidiger kann keine Karten legen.'}, room=request.sid)
+        else:
+            emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=request.sid)
+
+        # Update roles after playing a card
+        update_roles(room)
+
+def update_roles(room):
+    if room in rooms:
         for player in rooms[room]['hands']:
-            rooms[room]['hands'][player] = rooms[room]['deck'][:6]
-            rooms[room]['deck'] = rooms[room]['deck'][6:]
+            if player == rooms[room]['current_player']:
+                emit('update_role', {'role': 'Angreifer'}, room=rooms[room]['sids'][player])
+            elif player == rooms[room]['defender']:
+                emit('update_role', {'role': 'Verteidiger'}, room=rooms[room]['sids'][player])
+            else:
+                emit('update_role', {'role': 'Mitangreifer'}, room=rooms[room]['sids'][player])
 
-        # Ziehstapel initialisieren
-        rooms[room]['draw_pile'] = rooms[room]['deck']
-        rooms[room]['deck'] = []
-
-        # Initialisieren der gespielten Karten
-        rooms[room]['played_cards'] = []
-
-        # Spieler über ihre Hände informieren
-        for player, hand in rooms[room]['hands'].items():
-            if player in rooms[room]['sids']:
-                for sid in rooms[room]['sids'][player]:
-                    emit('update_hand', {'hand': hand}, room=sid)
-
-        # Ermittlung des Startspielers
-        trumpf = rooms[room]['trumpf']
-        player_with_lowest_trump = None
-        lowest_trump_card = None
-
-        for player, hand in rooms[room]['hands'].items():
-            player_trumps = [card for card in hand if card['suit'] == trumpf]
-            if player_trumps:
-                player_lowest_trump = min(player_trumps, key=lambda card: rank_value(card['rank']))
-                if (lowest_trump_card is None or 
-                        rank_value(player_lowest_trump['rank']) < rank_value(lowest_trump_card['rank'])):
-                    lowest_trump_card = player_lowest_trump
-                    player_with_lowest_trump = player
-
-        if player_with_lowest_trump is None:
-            # Wenn keiner der Spieler eine Trumpfkarte hat, wählen wir zufällig einen Spieler
-            player_with_lowest_trump = random.choice(list(rooms[room]['hands'].keys()))
-        
-        rooms[room]['current_player'] = player_with_lowest_trump
-        defender_index = (list(rooms[room]['hands'].keys()).index(player_with_lowest_trump) + 1) % len(rooms[room]['hands'])
-        rooms[room]['defender'] = list(rooms[room]['hands'].keys())[defender_index]
-        emit('start_player', {'player': player_with_lowest_trump}, room=room)
-        print(f"Game started in room {room} with player {player_with_lowest_trump} as attacker and {rooms[room]['defender']} as defender")
 
 
 @app.route('/room/<code>', methods=['GET', 'POST'])
@@ -280,6 +357,8 @@ def check_winner(room):
                     emit('message', {'name': 'System', 'message': f'{player} ist der Verlierer!'}, room=room)
             emit('game_over', {'placements': rooms[room]['placements']}, room=room)
             rooms[room]['game_started'] = False
+
+
 @socketio.on('play_card')
 def handle_play_card(data):
     room = session.get('room')
@@ -421,8 +500,11 @@ def handle_end_attack():
                 emit('message', {'name': 'System', 'message': f'{name} hat den Angriff beendet. Nächster Spieler ist {rooms[room]["current_player"]}.'}, room=room)
 
             check_winner(room)
+            update_roles(room)
         else:
             emit('message', {'name': 'System', 'message': 'Nur der Angreifer kann den Angriff beenden.'}, room=request.sid)
+
+
 
 @socketio.on('take_cards')
 def handle_take_cards():
@@ -468,6 +550,7 @@ def handle_take_cards():
                 emit('message', {'name': 'System', 'message': f'{name} hat die Karten genommen. Nächster Spieler ist {rooms[room]["current_player"]}.'}, room=room)
 
             check_winner(room)
+            update_roles(room)
         else:
             emit('message', {'name': 'System', 'message': 'Nur der Verteidiger kann die Karten nehmen.'}, room=request.sid)
 
