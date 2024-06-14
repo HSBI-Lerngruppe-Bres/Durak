@@ -9,25 +9,33 @@ var socketio = io();
 
 document.addEventListener('DOMContentLoaded', (event) => {
   if (!sessionStorage.getItem('joined')) {
-    socketio.emit('join', {});
-    sessionStorage.setItem('joined', 'true');
+      socketio.emit('join', {});
+      sessionStorage.setItem('joined', 'true');
   }
 
-  document.getElementById('start-game-btn').addEventListener("click", function() {
-    socketio.emit('start_game');
+  const startGameBtn = document.getElementById('start-game-btn');
+  startGameBtn.addEventListener("click", function() {
+      socketio.emit('start_game');
+      startGameBtn.classList.add('fade-out'); // Fade-out-Klasse hinzufügen
+      
+      // Button nach der Transition komplett entfernen
+      setTimeout(() => {
+          startGameBtn.style.display = 'none';
+      }, 500); // Zeit sollte der Dauer der Transition entsprechen
   });
 
   document.getElementById('end-attack-btn').addEventListener("click", function() {
-    socketio.emit('end_attack');
+      socketio.emit('end_attack');
   });
 
   document.getElementById('take-cards-btn').addEventListener("click", function() {
-    socketio.emit('take_cards');
+      socketio.emit('take_cards');
   });
 
   // Call this function to ensure the deck is updated
   socketio.emit('request_deck_update');
 });
+
 
 const messages = document.getElementById("messages");
 

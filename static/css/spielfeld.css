@@ -79,18 +79,57 @@ button#start-game-btn, button#end-attack-btn, button#take-cards-btn {
     transition: background 0.3s, transform 0.3s, box-shadow 0.3s; /* Sanfte Animationen bei Hover */
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Größerer Schatten für mehr Tiefe */
     color: white; /* Weißer Text für bessere Lesbarkeit */
+    background: linear-gradient(45deg, #3b82f6, #6366f1); /* Farbverlauf */
+    position: relative;
+    overflow: hidden;
+}
+
+button#start-game-btn::before, button#end-attack-btn::before, button#take-cards-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: skewX(-45deg);
+    transition: left 0.5s;
+}
+
+button#start-game-btn:hover::before, button#end-attack-btn:hover::before, button#take-cards-btn:hover::before {
+    left: 100%;
+}
+
+button#start-game-btn:hover, button#end-attack-btn:hover, button#take-cards-btn:hover {
+    transform: scale(1.05); /* Leichtes Vergrößern bei Hover */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); /* Größerer Schatten bei Hover */
 }
 
 button#start-game-btn {
-    background: #28a745; /* Grün für Start-Button */
+    padding: 15px 30px; /* Größeres Padding für eine bessere Optik */
+    font-size: 1.2em; /* Größere Schriftgröße */
+    border: none;
+    border-radius: 10px; /* Runde Ecken */
+    cursor: pointer;
+    transition: background 0.3s, transform 0.3s, box-shadow 0.3s, opacity 0.5s ease-out; /* Sanfte Animationen bei Hover und beim Ausblenden */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Größerer Schatten für mehr Tiefe */
+    color: white; /* Weißer Text für bessere Lesbarkeit */
+    background: linear-gradient(45deg, #34d399, #10b981); /* Grün für Start-Button */
+    position: relative;
+    overflow: hidden;
+}
+
+button#start-game-btn.fade-out {
+    opacity: 0; /* Button unsichtbar machen */
+    pointer-events: none; /* Verhindert weitere Interaktionen */
 }
 
 button#end-attack-btn {
-    background: #dc3545; /* Rot für End-Angriff-Button */
+    background: linear-gradient(45deg, #ef4444, #dc2626); /* Rot für End-Angriff-Button */
 }
 
 button#take-cards-btn {
-    background: #ffc107; /* Gelb für Karten-Nehmen-Button */
+    background: linear-gradient(45deg, #f59e0b, #fbbf24); /* Gelb für Karten-Nehmen-Button */
     color: black; /* Schwarzer Text für besseren Kontrast */
 }
 
@@ -172,12 +211,13 @@ button#start-game-btn:hover, button#end-attack-btn:hover, button#take-cards-btn:
     font-size: 1em;
     border: 2px solid rgba(255, 255, 255, 0.3); /* Halbtransparenter weißer Rahmen */
     backdrop-filter: blur(10px); /* Weichzeichnereffekt für den Hintergrund */
-    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Sanfte Animationen bei Hover */
+    transition: none; /* Entferne alle Transition-Effekte */
 }
 
+/* Entferne den Hover-Effekt */
 .messages:hover {
-    transform: translateY(-5px); /* Leichtes Anheben bei Hover */
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); /* Größerer Schatten bei Hover */
+    transform: none; /* Keine Transformation bei Hover */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Beibehalten des ursprünglichen Schattens */
 }
 
 .messages::-webkit-scrollbar {
