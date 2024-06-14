@@ -127,14 +127,13 @@ button#start-game-btn:hover, button#end-attack-btn:hover, button#take-cards-btn:
 
 .hands-image {
     position: absolute;
-    top: 420px; /* Passen Sie diesen Wert an, um das Bild der Hände tiefer zu setzen */
-    left: 91%;
+    bottom: -21px; /* Setzt die Hände fest am unteren Rand des Bildschirms */
+    left: 52%;
     transform: translateX(-50%);
-    width: 100%;
     display: flex;
-    justify-content: space-between; /* Zentriert die Hände nach links und rechts */
+    justify-content: center; /* Zentriert die Hände */
     align-items: center;
-    padding: 0 50px; /* Abstand vom Rand */
+    padding: 0; /* Kein Abstand vom Rand */
 }
 
 .hands-image img {
