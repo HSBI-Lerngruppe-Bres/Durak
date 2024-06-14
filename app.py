@@ -233,6 +233,21 @@ def handle_start_game():
         emit('start_player', {'player': player_with_lowest_trump}, room=room)
         print(f"Game started in room {room} with player {player_with_lowest_trump} as attacker and {rooms[room]['defender']} as defender")
 
+
+@app.route('/room/<code>', methods=['GET', 'POST'])
+def join_room_direct(code):
+    if request.method == 'POST':
+        name = request.form['name']
+        if not name:
+            flash('Bitte geben Sie einen Namen ein.')
+            return redirect(url_for('join_room_direct', code=code))
+
+        session['room'] = code
+        session['name'] = name
+        return redirect(url_for('room'))
+    return render_template('join_room.html', code=code)
+
+
 @socketio.on('join')
 def on_join(data):
     room = session.get('room')

@@ -1,0 +1,48 @@
+/* join_room.css */
+.join-room-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    margin-top: 50px;
+}
+
+.join-room-form h1 {
+    font-size: 2em;
+    color: #333;
+}
+
+.join-room-form div {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.join-room-form label {
+    font-size: 1.2em;
+    color: #555;
+}
+
+.join-room-form input {
+    padding: 10px;
+    font-size: 1em;
+    width: 200px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.join-room-form button {
+    padding: 10px 20px;
+    font-size: 1.2em;
+    color: white;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.join-room-form button:hover {
+    background-color: #0056b3;
+}
