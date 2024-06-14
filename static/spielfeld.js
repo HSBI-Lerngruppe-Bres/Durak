@@ -34,7 +34,19 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
   // Call this function to ensure the deck is updated
   socketio.emit('request_deck_update');
+  
+  // Neuer Event-Listener für das Entfernen des Start-Buttons
+  socketio.on('remove_start_button', () => {
+      const startGameBtn = document.getElementById('start-game-btn');
+      if (startGameBtn) {
+          startGameBtn.classList.add('fade-out');
+          setTimeout(() => {
+              startGameBtn.style.display = 'none';
+          }, 500);
+      }
+  });
 });
+
 
 
 const messages = document.getElementById("messages");

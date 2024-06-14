@@ -190,6 +190,7 @@ def handle_start_game():
     if room and room in rooms:
         rooms[room]['game_started'] = True
         emit('message', {'name': 'System', 'message': 'Das Spiel hat begonnen!'}, room=room)
+        emit('remove_start_button', room=room) 
 
         # Karten austeilen
         for player in rooms[room]['hands']:

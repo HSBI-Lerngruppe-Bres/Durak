@@ -40,7 +40,9 @@
         </div>
         
         <div class="link-container">
-            <button id="copy-link-btn" onclick="copyLink()">Kopiere Link</button>
+            <div id="copy-link-icon" onclick="copyLink()" title="Kopiere Link">
+                <img src="{{ url_for('static', filename='images/link-hyperlink-color-icon.svg') }}" alt="Link Icon">
+            </div>
         </div>
 
         <div class="played-cards" id="played-cards">
