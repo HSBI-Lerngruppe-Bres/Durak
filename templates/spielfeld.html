@@ -1,38 +1,63 @@
 <!-- spielfeld.html -->
-{% extends 'base.html' %}
-{% block body_class %}spielfeld-body{% endblock %}
-{% block content %} 
-<link rel="stylesheet" href="{{url_for('static', filename='css/spielfeld.css')}}">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/spielfeld.css') }}">
+    <title>Game Room</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+    <style>
+        body.spielfeld-body {
+            background: url('{{ url_for('static', filename='spielfeld.png') }}') no-repeat center center fixed;
+            background-size: 100% 100%;
+            margin: 0;
+            padding: 0;
+            border: none;
+            height: 100vh;
+            font-family: 'Baloo 2', cursive;
+        }
+    </style>
+</head>
+<body class="spielfeld-body">
+    <div class="content">
+        <h1 class="game-room-title">Game Room {{code}}</h1>
+        <div class="copy-area">
+            <textarea id="code-textarea">{{code}}</textarea>
+            <button class="copy-button" id="copy-btn">Kopieren</button>
+        </div>
+        <h1 class="trumpf">Trumpf: 
+            {% if trumpf == 'C' %}
+                ♣
+            {% elif trumpf == 'D' %}
+                <span style="color: red;">♦</span>
+            {% elif trumpf == 'H' %}
+                <span style="color: red;">♥</span>
+            {% elif trumpf == 'S' %}
+                ♠
+            {% endif %}
+        </h1>
+        <div class="button-container">
+            <button id="start-game-btn">Spiel Starten</button>
+            <button id="end-attack-btn">Angriff Beenden</button>
+            <button id="take-cards-btn">Karten Nehmen</button>
+        </div>
 
-<h1 class="game-room-title">Game Room {{code}}</h1>
-<div class="copy-area">
-  <textarea id="code-textarea">{{code}}</textarea>
-  <button class="copy-button" id="copy-btn">Kopieren</button>
-</div>
-<h1 class="trumpf">Trumpf: 
-  {% if trumpf == 'C' %}
-    ♣
-  {% elif trumpf == 'D' %}
-    <span style="color: red;">♦</span>
-  {% elif trumpf == 'H' %}
-    <span style="color: red;">♥</span>
-  {% elif trumpf == 'S' %}
-    ♠
-  {% endif %}
-</h1>
-<button id="start-game-btn">Spiel Starten</button>
-<button id="end-attack-btn">Angriff Beenden</button>
-<button id="take-cards-btn">Karten Nehmen</button>
+        <div class="played-cards" id="played-cards">
+            <!-- Hier werden die gespielten Karten angezeigt -->
+        </div>
 
-<div class="played-cards" id="played-cards">
-  <!-- Hier werden die gespielten Karten angezeigt -->
-</div>
+        <div class="deck" id="deck">
+            <!-- Karten werden hier angezeigt, sobald das Spiel gestartet ist -->
+        </div>
 
-<div class="deck" id="deck">
-  <!-- Karten werden hier angezeigt, sobald das Spiel gestartet ist -->
-</div>
+        <!-- Hier das Bild von den Händen hinzufügen -->
+        <div class="hands-image">
+            <img src="{{ url_for('static', filename='spieler_hand.png') }}" alt="Hände">
+        </div>
 
-<div class="messages" id="messages"></div>
-
-<script src="{{url_for('static', filename='spielfeld.js')}}" type="text/javascript"></script>
-{% endblock %}
+        <div class="messages" id="messages"></div>
+    </div>
+    <script src="{{ url_for('static', filename='spielfeld.js') }}" type="text/javascript"></script>
+</body>
+</html>

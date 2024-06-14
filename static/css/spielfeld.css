@@ -1,12 +1,27 @@
 /* spielfeld.css */
+/* spielfeld.css */
 body.spielfeld-body {
-    background: #fff;
     margin: 0;
     padding: 0;
     border: none;
     height: 100vh;
+    width: 100vw;
+    overflow: hidden;
     font-family: 'Baloo 2', cursive;
     background-size: cover;
+}
+
+.content {
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    position: relative;
+}
+
+h1 {
+    color: #333;
+    font-size: 2em;
+    margin-bottom: 20px;
 }
 
 h1.game-room-title {
@@ -24,28 +39,65 @@ h1.game-room-title {
 .copy-area {
     position: absolute;
     top: 100px;
-    left: 8%;
+    left: 50%;
     transform: translateX(-50%);
     text-align: center;
 }
 
 h1.trumpf {
     position: absolute;
-    top: 180px;
-    left: 7.2%;
+    top: 5px;
+    left: 10%;
     transform: translateX(-50%);
     color: #000;
     font-size: 2.5em;
     text-align: center;
+    padding: 10px 20px; /* Polsterung innerhalb des Rahmens */
+    border: 2px solid rgba(0, 0, 0, 0.3); /* Halbtransparenter Rahmen */
+    border-radius: 15px; /* Abgerundete Ecken */
+    background: rgba(255, 255, 255, 0.7); /* Halbtransparenter weißer Hintergrund */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Schatten für mehr Tiefe */
+    backdrop-filter: blur(5px); /* Weichzeichnereffekt für den Hintergrund */
+}
+
+.button-container {
+    position: absolute;
+    top: 220px;
+    left: 20px; /* Verschiebt die Buttons nach links */
+    display: flex;
+    flex-direction: column; /* Buttons untereinander anordnen */
+    align-items: flex-start; /* Buttons linksbündig ausrichten */
+    gap: 20px; /* Abstand zwischen den Buttons */
+}
+
+button#start-game-btn, button#end-attack-btn, button#take-cards-btn {
+    padding: 15px 30px; /* Größeres Padding für eine bessere Optik */
+    font-size: 1.2em; /* Größere Schriftgröße */
+    border: none;
+    border-radius: 10px; /* Runde Ecken */
+    cursor: pointer;
+    transition: background 0.3s, transform 0.3s, box-shadow 0.3s; /* Sanfte Animationen bei Hover */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Größerer Schatten für mehr Tiefe */
+    color: white; /* Weißer Text für bessere Lesbarkeit */
 }
 
 button#start-game-btn {
-    position: absolute;
-    top: 180px;
-    left: 7.2%;
-    transform: translateX(-50%);
+    background: #28a745; /* Grün für Start-Button */
 }
 
+button#end-attack-btn {
+    background: #dc3545; /* Rot für End-Angriff-Button */
+}
+
+button#take-cards-btn {
+    background: #ffc107; /* Gelb für Karten-Nehmen-Button */
+    color: black; /* Schwarzer Text für besseren Kontrast */
+}
+
+button#start-game-btn:hover, button#end-attack-btn:hover, button#take-cards-btn:hover {
+    transform: translateY(-5px); /* Leichtes Anheben bei Hover */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); /* Größerer Schatten bei Hover */
+}
 .played-cards {
     position: absolute;
     top: 300px;
@@ -53,7 +105,7 @@ button#start-game-btn {
     transform: translateX(-50%);
     display: flex;
     justify-content: center;
-    gap: 30px; /* Werte erhöht*/
+    gap: 30px; /* Werte erhöht */
 }
 
 .played-cards img {
@@ -63,13 +115,31 @@ button#start-game-btn {
 
 .deck {
     position: absolute;
-    bottom: 20px;
-    left: 50%;
+    bottom: 123px;
+    left: 54%;
     transform: translateX(-50%);
     display: flex;
     justify-content: center;
     overflow-x: auto;
     width: 100%;
+    z-index: 2; /* Höherer Layer */
+}
+
+.hands-image {
+    position: absolute;
+    top: 420px; /* Passen Sie diesen Wert an, um das Bild der Hände tiefer zu setzen */
+    left: 91%;
+    transform: translateX(-50%);
+    width: 100%;
+    display: flex;
+    justify-content: space-between; /* Zentriert die Hände nach links und rechts */
+    align-items: center;
+    padding: 0 50px; /* Abstand vom Rand */
+}
+
+.hands-image img {
+    width: auto;
+    height: 350px; /* Passen Sie die Höhe des Bildes nach Bedarf an, um es größer zu machen */
 }
 
 .card-button {
@@ -94,10 +164,81 @@ button#start-game-btn {
     max-height: 150px;
     overflow-y: auto;
     width: 300px;
-    background: rgba(0, 0, 0, 0.1);
-    padding: 10px;
+    background: rgba(0, 0, 0, 0.6); /* Halbtransparenter Hintergrund */
+    padding: 15px; /* Etwas mehr Padding für ein angenehmeres Layout */
+    border-radius: 15px; /* Runde Ecken vergrößern */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Größerer Schatten für mehr Tiefe */
+    color: #fff; /* Weißer Text für bessere Lesbarkeit */
+    font-family: 'Baloo 2', cursive;
+    font-size: 1em;
+    border: 2px solid rgba(255, 255, 255, 0.3); /* Halbtransparenter weißer Rahmen */
+    backdrop-filter: blur(10px); /* Weichzeichnereffekt für den Hintergrund */
+    transition: transform 0.3s ease, box-shadow 0.3s ease; /* Sanfte Animationen bei Hover */
+}
+
+.messages:hover {
+    transform: translateY(-5px); /* Leichtes Anheben bei Hover */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3); /* Größerer Schatten bei Hover */
+}
+
+.messages::-webkit-scrollbar {
+    width: 10px;
+}
+
+.messages::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+}
+
+.messages::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 10px;
+}
+
+.messages::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.8);
+}
+
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    margin: 10px;
+    font-size: 1em;
+    color: #ffffff;
+    text-decoration: none;
     border-radius: 5px;
+    transition: background 0.3s, transform 0.3s;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-primary {
+    background: #007bff;
+}
+
+.btn-secondary {
+    background: #6c757d;
+}
+
+.btn:hover {
+    transform: scale(1.1);
+}
+
+.btn-primary:hover {
+    background: #0056b3;
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
 }
 
 @media (max-width: 600px) {
@@ -132,11 +273,10 @@ button#start-game-btn {
 
 .card-overlay {
     position: absolute;
-    transform: rotate(20deg); /* Wert erhöht*/
+    transform: rotate(20deg); /* Wert erhöht */
     z-index: 10; /* Sicherstellen, dass die Karte über der anderen Karte liegt */
     width: 100px; /* Anpassen der Größe nach Bedarf */
     height: auto;
     top: 0; /* Sicherstellen, dass die überlagerte Karte oben beginnt */
     left: 0; /* Sicherstellen, dass die überlagerte Karte links beginnt */
 }
-
