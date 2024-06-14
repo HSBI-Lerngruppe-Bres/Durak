@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     socketio.emit('join', {});
     sessionStorage.setItem('joined', 'true');
   }
-  
+
   document.getElementById('start-game-btn').addEventListener("click", function() {
     socketio.emit('start_game');
   });
@@ -24,6 +24,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
   document.getElementById('take-cards-btn').addEventListener("click", function() {
     socketio.emit('take_cards');
   });
+
+  // Call this function to ensure the deck is updated
+  socketio.emit('request_deck_update');
 });
 
 const messages = document.getElementById("messages");
@@ -45,23 +48,6 @@ const createMessage = (name, msg) => {
 
 socketio.on("message", (data) => {
   createMessage(data.name, data.message);
-});
-
-document.getElementById('copy-btn').addEventListener("click", function() {
-  const textarea = document.getElementById('code-textarea');
-  textarea.select();
-  textarea.setSelectionRange(0, 99999); // Für mobile Geräte
-
-  try {
-      const successful = document.execCommand('copy');
-      if (successful) {
-          alert('Text wurde in die Zwischenablage kopiert.');
-      } else {
-          throw new Error('Kopiervorgang nicht erfolgreich.');
-      }
-  } catch (err) {
-      alert('Fehler beim Kopieren des Textes: ' + err);
-  }
 });
 
 socketio.on("update_deck", (data) => {
@@ -374,4 +360,3 @@ socketio.on('game_over', (data) => {
   }
   alert(message);
 });
-
