@@ -1,40 +1,72 @@
 <!-- multiplayer.html -->
-{% extends 'base.html' %}
-{% block content %} 
-<link rel="stylesheet" href="{{url_for('static', filename='css/multiplayer.css')}}">
-<form method="post" class="buttons">
-    <h1>Spiele zusammen mit deinen Freunden!</h1>
-    <div>
-        <label>Name:</label>
-        <input 
-        type="text" 
-        placeholder="Usernamen" 
-        name="name" 
-        value="{{name}}"
-        />
-    </div>
-    <div class="join">
-        <input type="text" placeholder="Game-Code" name="code" value="{{code}}"/>
-        <button type="submit" name="join">Join a Game</button>
-    </div>
-    {% if session['user_id'] %}
-        <button type="submit" name="create" class="create-btn">Create a Game</button>
-    {% else %}
-        <button type="button" onclick="showAlertAndRedirect()" class="create-btn">Create a Game</button>
-    {% endif %}
-    {% if error %}
-    <ul>
-        <li>{{error}}</li>
-    </ul>
-    {% endif %}
-</form>
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="Durak Online Kartenspiel">
+    <meta name="author" content="Durak Team">
+    <link rel="icon" href="/static/images/favicon.ico">
 
-<script>
-    function showAlertAndRedirect() {
-        alert('Bitte melden Sie sich an, um ein Spiel zu erstellen.');
-        setTimeout(function() {
-            window.location.href = "{{ url_for('welcome') }}";
-        }, 500);
-    }
-</script>
-{% endblock %}
+    <title>Durak Kartenspiel - Multiplayer</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{url_for('static', filename='css/multiplayer.css')}}" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5 d-flex justify-content-center">
+        <div class="form-container p-4 rounded">
+            <h1 class="text-center">Spiele zusammen mit deinen Freunden!</h1>
+            <form method="post" class="mt-4">
+                <div class="mb-3">
+                    <label for="name" class="form-label">Name:</label>
+                    <input 
+                        type="text" 
+                        class="form-control" 
+                        id="name" 
+                        placeholder="Username" 
+                        name="name" 
+                        value="{{name}}"
+                    />
+                </div>
+                <div class="mb-3 join">
+                    <label for="code" class="form-label">Game-Code:</label>
+                    <input 
+                        type="text" 
+                        class="form-control" 
+                        id="code" 
+                        placeholder="Game-Code" 
+                        name="code" 
+                        value="{{code}}"
+                    />
+                    <button type="submit" name="join" class="btn btn-primary mt-2 w-100">Join a Game</button>
+                </div>
+                <div class="text-center mt-4">
+                    {% if session['user_id'] %}
+                        <button type="submit" name="create" class="btn btn-success w-100">Create a Game</button>
+                    {% else %}
+                        <button type="button" onclick="showAlertAndRedirect()" class="btn btn-success w-100">Create a Game</button>
+                    {% endif %}
+                </div>
+                {% if error %}
+                <div class="alert alert-danger mt-3">
+                    <ul>
+                        <li>{{error}}</li>
+                    </ul>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function showAlertAndRedirect() {
+            alert('Bitte melden Sie sich an, um ein Spiel zu erstellen.');
+            setTimeout(function() {
+                window.location.href = "{{ url_for('welcome') }}";
+            }, 500);
+        }
+    </script>
+</body>
+</html>
