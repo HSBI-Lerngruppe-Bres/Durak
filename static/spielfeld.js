@@ -47,12 +47,27 @@ document.addEventListener('DOMContentLoaded', (event) => {
   socketio.on('update_role', (data) => {
       updateRole(data.role);
   });
+
+  socketio.on('update_players', (data) => {
+      updatePlayerInfo(data.players);
+  });
 });
 
 function updateRole(role) {
   const roleInfo = document.getElementById('role-info');
   roleInfo.className = 'role-info ' + role.toLowerCase();
   roleInfo.style.display = 'block';
+}
+
+function updatePlayerInfo(players) {
+  const playerInfoDiv = document.getElementById('player-info');
+  playerInfoDiv.innerHTML = '';
+  players.forEach(player => {
+      const playerDiv = document.createElement('div');
+      playerDiv.className = `player ${player.role.toLowerCase()}`;
+      playerDiv.innerHTML = `<strong>${player.name}</strong> (${player.cards} Karten)`;
+      playerInfoDiv.appendChild(playerDiv);
+  });
 }
 
 

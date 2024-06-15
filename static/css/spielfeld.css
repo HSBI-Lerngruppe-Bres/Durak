@@ -400,6 +400,38 @@ button#start-game-btn:hover, button#end-attack-btn:hover, button#take-cards-btn:
     }
 }
 
+/* Spielerinformation Overlay */
+.player-info {
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 10px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.player-info .player {
+    margin: 5px 0;
+}
+
+.player-info .angreifer {
+    color: green;
+}
+
+.player-info .mitangreifer {
+    color: yellow;
+}
+
+.player-info .verteidiger {
+    color: red;
+}
+
 /* Rolle Information Overlay */
 .role-info {
     position: absolute;

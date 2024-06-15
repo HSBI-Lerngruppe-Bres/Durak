@@ -48,6 +48,10 @@
             </div>
         </div>
 
+        <div class="player-info" id="player-info">
+            <!-- Hier werden die Spielerinformationen angezeigt -->
+        </div>
+
         <div class="played-cards" id="played-cards">
             <!-- Hier werden die gespielten Karten angezeigt -->
         </div>
@@ -123,6 +127,17 @@
             const roleInfo = document.getElementById('role-info');
             roleInfo.className = 'role-info ' + role.toLowerCase();
             roleInfo.style.display = 'block';
+        }
+
+        function updatePlayerInfo(players) {
+            const playerInfoDiv = document.getElementById('player-info');
+            playerInfoDiv.innerHTML = '';
+            players.forEach(player => {
+                const playerDiv = document.createElement('div');
+                playerDiv.className = `player ${player.role.toLowerCase()}`;
+                playerDiv.innerHTML = `<strong>${player.name}</strong> (${player.cards} Karten)`;
+                playerInfoDiv.appendChild(playerDiv);
+            });
         }
     </script>
     <script src="{{ url_for('static', filename='spielfeld.js') }}" type="text/javascript"></script>

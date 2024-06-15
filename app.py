@@ -129,8 +129,19 @@ def draw_cards(room):
     for player in rooms[room]['hands']:
         while len(rooms[room]['hands'][player]) < 6 and rooms[room]['draw_pile']:
             rooms[room]['hands'][player].append(rooms[room]['draw_pile'].pop())
-            emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=player)
+            emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=rooms[room]['sids'][player])
+    update_players(room)
 
+def update_players(room):
+    players = []
+    for player in rooms[room]['hands']:
+        role = 'Mitangreifer'
+        if player == rooms[room]['current_player']:
+            role = 'Angreifer'
+        elif player == rooms[room]['defender']:
+            role = 'Verteidiger'
+        players.append({'name': player, 'cards': len(rooms[room]['hands'][player]), 'role': role})
+    emit('update_players', {'players': players}, room=room)
 
 @socketio.on('start_game')
 def handle_start_game():
@@ -184,7 +195,7 @@ def handle_start_game():
 
         # Update roles
         update_roles(room)
-
+        update_players(room)
 
 
 @app.route('/multiplayer', methods=['POST', 'GET'])
@@ -297,8 +308,8 @@ def handle_play_card(data):
         else:
             emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=request.sid)
 
-        # Update roles after playing a card
-        update_roles(room)
+    update_roles(room)
+    update_players(room)
 
 def update_roles(room):
     if room in rooms:
@@ -340,6 +351,7 @@ def on_join(data):
         elif request.sid not in rooms[room]['sids'][name]:
             rooms[room]['sids'][name].append(request.sid)
             join_room(room)
+    update_players(room)
 
 def check_winner(room):
     players_with_no_cards = [player for player, hand in rooms[room]['hands'].items() if not hand]
@@ -357,6 +369,8 @@ def check_winner(room):
                     emit('message', {'name': 'System', 'message': f'{player} ist der Verlierer!'}, room=room)
             emit('game_over', {'placements': rooms[room]['placements']}, room=room)
             rooms[room]['game_started'] = False
+
+    update_players(room)
 
 
 @socketio.on('play_card')
@@ -416,6 +430,9 @@ def handle_play_card(data):
         else:
             emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=request.sid)
 
+    update_roles(room)
+    update_players(room)
+
 @socketio.on('overplay_card')
 def handle_overplay_card(data):
     room = session.get('room')
@@ -427,7 +444,6 @@ def handle_overplay_card(data):
 
         current_player = rooms[room]['current_player']
         defender = rooms[room]['defender']
-        players = [player for player in rooms[room]['hands'] if rooms[room]['hands'][player]]
         card = {'rank': data['rank'], 'suit': data['suit']}
         target_index = data.get('target_index')
         trumpf = rooms[room]['trumpf']
@@ -437,13 +453,11 @@ def handle_overplay_card(data):
                 if card in rooms[room]['hands'][name]:
                     target_card = rooms[room]['played_cards'][target_index][-1]
 
+                    if any(card in group for group in rooms[room]['played_cards']):
+                        emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte wurde bereits überlagert.'}, room=request.sid)
+                        return
+
                     if (card['suit'] == target_card['suit'] and rank_value(card['rank']) > rank_value(target_card['rank'])) or (card['suit'] == trumpf and target_card['suit'] != trumpf):
-                        rooms[room]['hands'][name].remove(card)
-                        rooms[room]['played_cards'][target_index].append(card)
-                        emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
-                        emit('card_overplayed', {'rank': card['rank'], 'suit': card['suit'], 'player': name, 'target_index': target_index}, room=room)
-                        check_winner(room)
-                    elif card['suit'] == trumpf and target_card['suit'] == trumpf and rank_value(card['rank']) > rank_value(target_card['rank']):
                         rooms[room]['hands'][name].remove(card)
                         rooms[room]['played_cards'][target_index].append(card)
                         emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
@@ -457,6 +471,8 @@ def handle_overplay_card(data):
                 emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Ungültiges Ziel.'}, room=request.sid)
         else:
             emit('message', {'name': 'System', 'message': 'Nur der Verteidiger darf Karten überlagern.'}, room=request.sid)
+
+    update_players(room)
 
 @socketio.on('end_attack')
 def handle_end_attack():
@@ -474,11 +490,8 @@ def handle_end_attack():
                 rooms[room]['played_cards'] = []
                 emit('clear_played_cards', room=room)
 
-            for player in rooms[room]['hands']:
-                while len(rooms[room]['hands'][player]) < 6 and rooms[room]['draw_pile']:
-                    rooms[room]['hands'][player].append(rooms[room]['draw_pile'].pop())
-                for sid in rooms[room]['sids'][player]:
-                    emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=sid)
+            draw_cards(room)  # Stelle sicher, dass die Karten sofort nachgezogen werden
+            update_players(room)
 
             players = [player for player in rooms[room]['hands'] if rooms[room]['hands'][player]]
             if len(players) == 1:
@@ -504,6 +517,8 @@ def handle_end_attack():
         else:
             emit('message', {'name': 'System', 'message': 'Nur der Angreifer kann den Angriff beenden.'}, room=request.sid)
 
+    update_players(room)
+
 
 
 @socketio.on('take_cards')
@@ -526,11 +541,8 @@ def handle_take_cards():
             emit('clear_played_cards', room=room)
             emit('message', {'name': 'System', 'message': f'{name} hat die Karten genommen.'}, room=room)
 
-            for player in rooms[room]['hands']:
-                while len(rooms[room]['hands'][player]) < 6 and rooms[room]['draw_pile']:
-                    rooms[room]['hands'][player].append(rooms[room]['draw_pile'].pop())
-                for sid in rooms[room]['sids'][player]:
-                    emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=sid)
+            draw_cards(room)  # Stelle sicher, dass die Karten sofort nachgezogen werden
+            update_players(room)
 
             if len(players) == 1:
                 for player in rooms[room]['hands']:
@@ -553,6 +565,8 @@ def handle_take_cards():
             update_roles(room)
         else:
             emit('message', {'name': 'System', 'message': 'Nur der Verteidiger kann die Karten nehmen.'}, room=request.sid)
+
+    update_players(room)
 
 # session handling
 @socketio.on("connect")
