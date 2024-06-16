@@ -1,6 +1,6 @@
 # Durak
 
-![Durak Logo](static\images\261787.ico)
+![Durak Logo](static/images/261787.ico)
 
 ## Overview
 
