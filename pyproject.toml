@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "durak-06-06"
+version = "0.1.0"
+description = ""
+authors = ["Benjamin Albrecht <physik.chemie.mathe.bio@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+flask = "^3.0.3"
+sqlalchemy = "^2.0.30"
+flask-db = "^0.4.1"
+flask-sqlalchemy = "^3.1.1"
+flask-socketio = "^5.3.6"
+bcrypt-flask = "^1.0.2"
+flask-migrate = "^4.0.7"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
