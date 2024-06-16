@@ -1,37 +1,37 @@
-# Durak
+# 🎴 Durak
 
 ![Durak Logo](static/images/261787.ico)
 
-## Überblick
+## 📖 Überblick
 
-**Durak** ist ein Mehrspieler-Kartenspiel, bei dem die Spieler darum kämpfen, nicht der letzte zu sein, der noch Karten auf der Hand hat. Das Spiel wurde mit Flask, SocketIO und SQLAlchemy entwickelt und bietet Echtzeit-Interaktionen sowie eine moderne Weboberfläche.
+**Durak** ist ein spannendes Mehrspieler-Kartenspiel, bei dem die Spieler darum kämpfen, nicht der letzte zu sein, der noch Karten auf der Hand hat. Entwickelt mit Flask, SocketIO und SQLAlchemy, bietet es Echtzeit-Interaktionen und eine moderne Weboberfläche.
 
-## Funktionen
+## ✨ Funktionen
 
-- Echtzeit-Mehrspieler-Gameplay
-- Benutzerauthentifizierung und Sitzungsverwaltung
-- Interaktive Benutzeroberfläche mit Echtzeit-Updates
-- Plattformübergreifende Unterstützung (Windows, macOS, Linux)
+- ⚔️ Echtzeit-Mehrspieler-Gameplay
+- 🔒 Benutzerauthentifizierung und Sitzungsverwaltung
+- 🖥️ Interaktive Benutzeroberfläche mit Echtzeit-Updates
+- 🌐 Plattformübergreifende Unterstützung (Windows, macOS, Linux)
 
-## Inhaltsverzeichnis
+## 📚 Inhaltsverzeichnis
 
-- [Anforderungen](#anforderungen)
-- [Installation](#installation)
-  - [Windows](#windows)
-  - [macOS](#macos)
-  - [Linux](#linux)
-- [Spiel starten](#spiel-starten)
-- [Beitragen](#beitragen)
-- [Lizenz](#lizenz)
+- [📋 Anforderungen](#-anforderungen)
+- [⚙️ Installation](#-installation)
+  - [🪟 Windows](#windows)
+  - [🍎 macOS](#macos)
+  - [🐧 Linux](#linux)
+- [🎮 Spiel starten](#spiel-starten)
+- [🤝 Beitragen](#beitragen)
+- [📄 Lizenz](#lizenz)
 
-## Anforderungen
+## 📋 Anforderungen
 
-- Python 3.9 oder höher
-- Poetry zur Abhängigkeitsverwaltung
+- 🐍 Python 3.9 oder höher
+- 📦 Poetry zur Abhängigkeitsverwaltung
 
-## Installation
+## ⚙️ Installation
 
-### Windows
+### 🪟 Windows
 
 1. **Repository klonen:**
 
@@ -53,7 +53,7 @@
     poetry install
     ```
 
-### macOS
+### 🍎 macOS
 
 1. **Repository klonen:**
 
@@ -75,7 +75,7 @@
     poetry install
     ```
 
-### Linux
+### 🐧 Linux
 
 1. **Repository klonen:**
 
@@ -102,7 +102,7 @@
     poetry install
     ```
 
-## Spiel starten
+## 🎮 Spiel starten
 
 1. **Virtuelle Umgebung aktivieren:**
 
@@ -122,11 +122,11 @@
     http://127.0.0.1:5000/
     ```
 
-## Beitragen
+## 🤝 Beitragen
 
 Beiträge sind willkommen! Bitte lesen Sie unsere [Beitragsrichtlinien](CONTRIBUTING.md) für weitere Informationen, wie Sie beginnen können.
 
-## Lizenz
+## 📄 Lizenz
 
 Dieses Projekt ist unter der MIT-Lizenz lizenziert. Siehe die [LICENSE](LICENSE)-Datei für Details.
 
