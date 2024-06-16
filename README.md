@@ -1,6 +1,6 @@
 # Durak
 
-![Durak Logo](https://via.placeholder.com/728x90.png?text=Durak+Logo)
+![Durak Logo](static\images\261787.ico)
 
 ## Overview
 
