@@ -2,52 +2,52 @@
 
 ![Durak Logo](static/images/261787.ico)
 
-## Overview
+## Überblick
 
-**Durak** is a multiplayer card game where players compete to avoid being the last one with cards in their hand. The game is built using Flask, SocketIO, and SQLAlchemy, and features real-time interactions and a modern web interface.
+**Durak** ist ein Mehrspieler-Kartenspiel, bei dem die Spieler darum kämpfen, nicht der letzte zu sein, der noch Karten auf der Hand hat. Das Spiel wurde mit Flask, SocketIO und SQLAlchemy entwickelt und bietet Echtzeit-Interaktionen sowie eine moderne Weboberfläche.
 
-## Features
+## Funktionen
 
-- Real-time multiplayer gameplay
-- User authentication and session management
-- Interactive UI with real-time updates
-- Cross-platform support (Windows, macOS, Linux)
+- Echtzeit-Mehrspieler-Gameplay
+- Benutzerauthentifizierung und Sitzungsverwaltung
+- Interaktive Benutzeroberfläche mit Echtzeit-Updates
+- Plattformübergreifende Unterstützung (Windows, macOS, Linux)
 
-## Table of Contents
+## Inhaltsverzeichnis
 
-- [Requirements](#requirements)
+- [Anforderungen](#anforderungen)
 - [Installation](#installation)
   - [Windows](#windows)
   - [macOS](#macos)
   - [Linux](#linux)
-- [Running the Game](#running-the-game)
-- [Contributing](#contributing)
-- [License](#license)
+- [Spiel starten](#spiel-starten)
+- [Beitragen](#beitragen)
+- [Lizenz](#lizenz)
 
-## Requirements
+## Anforderungen
 
-- Python 3.9 or higher
-- Poetry for dependency management
+- Python 3.9 oder höher
+- Poetry zur Abhängigkeitsverwaltung
 
 ## Installation
 
 ### Windows
 
-1. **Clone the repository:**
+1. **Repository klonen:**
 
     ```sh
     git clone https://github.com/HSBI-Lerngruppe-Bres/Durak.git
     cd Durak
     ```
 
-2. **Install Poetry:**
+2. **Poetry installieren:**
 
     ```sh
     pip install --user pipx
     pipx install poetry
     ```
 
-3. **Install dependencies:**
+3. **Abhängigkeiten installieren:**
 
     ```sh
     poetry install
@@ -55,21 +55,21 @@
 
 ### macOS
 
-1. **Clone the repository:**
+1. **Repository klonen:**
 
     ```sh
     git clone https://github.com/HSBI-Lerngruppe-Bres/Durak.git
     cd Durak
     ```
 
-2. **Install Poetry:**
+2. **Poetry installieren:**
 
     ```sh
     brew install pipx
     pipx install poetry
     ```
 
-3. **Install dependencies:**
+3. **Abhängigkeiten installieren:**
 
     ```sh
     poetry install
@@ -77,55 +77,57 @@
 
 ### Linux
 
-1. **Clone the repository:**
+1. **Repository klonen:**
 
     ```sh
     git clone https://github.com/HSBI-Lerngruppe-Bres/Durak.git
     cd Durak
     ```
 
-2. **Install Poetry:**
+2. **Poetry installieren:**
 
     ```sh
     curl -sSL https://install.python-poetry.org | python3 -
     ```
 
-3. **Add Poetry to your PATH (if necessary):**
+3. **Poetry zu Ihrem PATH hinzufügen (falls notwendig):**
 
     ```sh
     export PATH="$HOME/.local/bin:$PATH"
     ```
 
-4. **Install dependencies:**
+4. **Abhängigkeiten installieren:**
 
     ```sh
     poetry install
     ```
 
-## Running the Game
+## Spiel starten
 
-1. **Activate the virtual environment:**
+1. **Virtuelle Umgebung aktivieren:**
 
     ```sh
     poetry shell
     ```
 
-2. **Run the Flask application:**
+2. **Flask-Anwendung starten:**
 
     ```sh
     poetry run python app.py
     ```
 
-3. **Open your web browser and go to:**
+3. **Öffnen Sie Ihren Webbrowser und gehen Sie zu:**
 
     ```arduino
     http://127.0.0.1:5000/
     ```
 
-## Contributing
+## Beitragen
 
-We welcome contributions! Please read our Contributing Guidelines for more information on how to get started.
+Beiträge sind willkommen! Bitte lesen Sie unsere [Beitragsrichtlinien](CONTRIBUTING.md) für weitere Informationen, wie Sie beginnen können.
 
-## License
+## Lizenz
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+Dieses Projekt ist unter der MIT-Lizenz lizenziert. Siehe die [LICENSE](LICENSE)-Datei für Details.
+
+---
