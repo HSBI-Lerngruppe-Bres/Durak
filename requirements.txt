@@ -4,12 +4,14 @@ bidict==0.23.1
 blinker==1.8.2
 cachelib==0.13.0
 click==8.1.7
+dnspython==2.6.1
+eventlet==0.36.1
 Flask==3.0.3
 Flask-Bcrypt==1.0.1
 Flask-Migrate==3.1.0
 Flask-Session==0.8.0
 Flask-SocketIO==5.3.6
-Flask-SQLAlchemy==2.5.1
+Flask-SQLAlchemy==3.1.1
 gevent==24.2.1
 greenlet==3.0.3
 gunicorn==22.0.0
@@ -25,7 +27,8 @@ python-dotenv==1.0.1
 python-engineio==4.9.1
 python-socketio==5.11.2
 simple-websocket==1.0.0
-SQLAlchemy==1.4.36
+SQLAlchemy==2.0.30
+typing_extensions==4.12.2
 Werkzeug==3.0.3
 wsproto==1.2.0
 zope.event==5.0
