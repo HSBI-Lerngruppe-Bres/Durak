@@ -1,14 +1,24 @@
 # app.py
+# import eventlet
+# eventlet.monkey_patch()
+
+import gevent.monkey
+gevent.monkey.patch_all()
+
+
+import os
+import sys
+import logging
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask_session import Session
 from flask_socketio import SocketIO, emit, join_room, leave_room, send
 from flask_migrate import Migrate
+from flask_bcrypt import Bcrypt
+from datetime import datetime
 import random
 from string import ascii_uppercase
-from datetime import datetime
-import os
-from flask_bcrypt import Bcrypt
-import sys
 from functools import wraps
+
 
 # Füge das aktuelle Verzeichnis und das Elterndirektorium zum Python-Pfad hinzu
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -21,25 +31,59 @@ from models import Spieler, Spiel, SpielZustand, RaumSitzung
 
 # db init
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'instance', 'spiel.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://durak_user:durak_password@34.46.51.53:3306/durak_db'
 app.config['SECRET_KEY'] = 'geheimeschluessel'
-app.config['SESSION_COOKIE_SAMESITE'] = 'None'
+app.config['SESSION_COOKIE_SECURE'] = False
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SESSION_COOKIE_SECURE'] = True
+
+# Flask-Session-Konfiguration
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_FILE_DIR'] = os.path.join(basedir, 'flask_session')
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_KEY_PREFIX'] = 'session:'
+app.config['SESSION_FILE_THRESHOLD'] = 500
+app.config['SESSION_COOKIE_NAME'] = 'session'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SECURE'] = False  # Testen Sie dies, um zu sehen, ob es einen Unterschied macht
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Testen Sie dies ebenfalls
+
+Session(app)
 
 db.init_app(app)
 migrate = Migrate(app, db)
 bcrypt = Bcrypt(app)
-socketio = SocketIO(app)
+
+async_mode = 'gevent'  # oder 'gevent' wenn eventlet Probleme verursacht
+socketio = SocketIO(app, cors_allowed_origins="*", logger=True, engineio_logger=True)
+
 
 with app.app_context():
     db.create_all()
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger('Durak.app')
+
+@app.before_request
+def before_request():
+    logger.info(f"Session before request: {dict(session.items())}")
+    logger.info(f"Cookies before request: {request.cookies}")
+    logger.info(f"Session ID before request: {session.sid if 'sid' in session else 'No session ID'}")
+
+@app.after_request
+def after_request(response):
+    logger.info(f"Session after request: {dict(session.items())}")
+    logger.info(f"Cookies after request: {response.headers.get('Set-Cookie')}")
+    logger.info(f"Session ID after request: {session.sid if 'sid' in session else 'No session ID'}")
+    return response
 
 # login and registration handling
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'user_id' not in session:
+        user_id = session.get('user_id')
+        logger.info(f"User ID in session: {user_id}")  # Logging
+        if not user_id:
             flash('Bitte melden Sie sich an, um auf diese Seite zuzugreifen.')
             return redirect(url_for('welcome'))
         return f(*args, **kwargs)
@@ -74,16 +118,24 @@ def register():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    logger.info("Login route accessed")  # Logging
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
+        logger.info(f"Login attempt with email: {email}")  # Logging
         user = Spieler.query.filter_by(email=email).first()
+        if user:
+            logger.info(f"User found: {user.name}")  # Logging
+        else:
+            logger.info("User not found")  # Logging
         if user and bcrypt.check_password_hash(user.password, password):
             session['user_id'] = user.id
+            logger.info(f"Session set for user_id: {user.id}")  # Logging
             flash('Erfolgreich angemeldet!')
             return redirect(url_for('index'))
         else:
             flash('Ungültige E-Mail oder Passwort')
+            logger.info("Invalid email or password")  # Logging
     return render_template('login.html')
 
 @app.route('/logout')
@@ -95,7 +147,14 @@ def logout():
 @app.route('/index')
 @login_required
 def index():
-    return render_template('index.html')
+    user_id = session.get('user_id')
+    if user_id:
+        user = Spieler.query.get(user_id)
+        if user:
+            logger.info(f"Index page accessed by user: {user.name}")  # Logging
+            return render_template('index.html', user=user)
+    flash('Benutzer nicht gefunden oder nicht angemeldet.')
+    return redirect(url_for('login'))
 
 rooms = {}
 
@@ -129,10 +188,14 @@ def draw_cards(room):
     for player in rooms[room]['hands']:
         while len(rooms[room]['hands'][player]) < 6 and rooms[room]['draw_pile']:
             rooms[room]['hands'][player].append(rooms[room]['draw_pile'].pop())
-            emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=rooms[room]['sids'][player])
+            if player in rooms[room]['sids']:
+                for sid in rooms[room]['sids'][player]:
+                    emit('update_hand', {'hand': rooms[room]['hands'][player]}, room=sid)
     update_players(room)
 
+
 def update_players(room):
+    print(f"Updating players for room: {room}")
     players = []
     for player in rooms[room]['hands']:
         role = 'Mitangreifer'
@@ -142,34 +205,38 @@ def update_players(room):
             role = 'Verteidiger'
         players.append({'name': player, 'cards': len(rooms[room]['hands'][player]), 'role': role})
     emit('update_players', {'players': players}, room=room)
+    print(f"Players updated: {players}")
+
+
 
 @socketio.on('start_game')
 def handle_start_game():
     room = session.get('room')
-    if room and room in rooms:
+    name = session.get('name')
+    if room and name and room in rooms:
+        if rooms[room]['game_started']:
+            emit('message', {'name': 'System', 'message': 'Das Spiel hat bereits begonnen.'}, room=request.sid)
+            return
+
         rooms[room]['game_started'] = True
         emit('message', {'name': 'System', 'message': 'Das Spiel hat begonnen!'}, room=room)
         emit('remove_start_button', room=room)
 
-        # Karten austeilen und andere Initialisierungen
+        # Karten austeilen
         for player in rooms[room]['hands']:
             rooms[room]['hands'][player] = rooms[room]['deck'][:6]
             rooms[room]['deck'] = rooms[room]['deck'][6:]
 
-        # Ziehstapel initialisieren
         rooms[room]['draw_pile'] = rooms[room]['deck']
         rooms[room]['deck'] = []
 
-        # Initialisieren der gespielten Karten
         rooms[room]['played_cards'] = []
 
-        # Spieler über ihre Hände informieren
         for player, hand in rooms[room]['hands'].items():
             if player in rooms[room]['sids']:
                 for sid in rooms[room]['sids'][player]:
                     emit('update_hand', {'hand': hand}, room=sid)
 
-        # Ermittlung des Startspielers
         trumpf = rooms[room]['trumpf']
         player_with_lowest_trump = None
         lowest_trump_card = None
@@ -178,24 +245,25 @@ def handle_start_game():
             player_trumps = [card for card in hand if card['suit'] == trumpf]
             if player_trumps:
                 player_lowest_trump = min(player_trumps, key=lambda card: rank_value(card['rank']))
-                if (lowest_trump_card is None or 
-                        rank_value(player_lowest_trump['rank']) < rank_value(lowest_trump_card['rank'])):
+                if (lowest_trump_card is None or rank_value(player_lowest_trump['rank']) < rank_value(lowest_trump_card['rank'])):
                     lowest_trump_card = player_lowest_trump
                     player_with_lowest_trump = player
 
         if player_with_lowest_trump is None:
-            # Wenn keiner der Spieler eine Trumpfkarte hat, wählen wir zufällig einen Spieler
             player_with_lowest_trump = random.choice(list(rooms[room]['hands'].keys()))
-        
+
         rooms[room]['current_player'] = player_with_lowest_trump
         defender_index = (list(rooms[room]['hands'].keys()).index(player_with_lowest_trump) + 1) % len(rooms[room]['hands'])
         rooms[room]['defender'] = list(rooms[room]['hands'].keys())[defender_index]
-        emit('start_player', {'player': player_with_lowest_trump}, room=room)
-        print(f"Game started in room {room} with player {player_with_lowest_trump} as attacker and {rooms[room]['defender']} as defender")
 
-        # Update roles
+        emit('start_player', {'player': player_with_lowest_trump}, room=room)
         update_roles(room)
         update_players(room)
+        logger.info(f"Game started in room {room} with player {player_with_lowest_trump} as attacker and {rooms[room]['defender']} as defender")
+
+
+
+
 
 
 @app.route('/multiplayer', methods=['POST', 'GET'])
@@ -263,14 +331,16 @@ def handle_play_card(data):
         card = {'rank': data['rank'], 'suit': data['suit']}
         current_player = rooms[room]['current_player']
         defender = rooms[room]['defender']
-        players = [player for player in rooms[room]['hands'] if rooms[room]['hands'][player]]
 
         if card in rooms[room]['hands'][name]:
-            if name == current_player:
+            if name == current_player or name != defender:
                 if 'played_cards' not in rooms[room]:
                     rooms[room]['played_cards'] = []
 
-                if len(rooms[room]['played_cards']) < len(rooms[room]['hands'][defender]):
+                total_base_cards = sum(len(group) == 1 for group in rooms[room]['played_cards'])
+                defender_cards_count = len(rooms[room]['hands'][defender])
+
+                if total_base_cards < defender_cards_count:
                     if rooms[room].get('played_cards'):
                         valid_ranks = {c['rank'] for group in rooms[room]['played_cards'] for c in group}
                         if card['rank'] not in valid_ranks:
@@ -287,29 +357,15 @@ def handle_play_card(data):
                 else:
                     emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nicht mehr Karten spielen, als der Verteidiger Karten hat.'}, room=request.sid)
             else:
-                if name != defender:
-                    if 'played_cards' in rooms[room] and rooms[room]['played_cards']:
-                        valid_ranks = {c['rank'] for group in rooms[room]['played_cards'] for c in group}
-                        if card['rank'] in valid_ranks:
-                            if len(rooms[room]['played_cards']) < len(rooms[room]['hands'][defender]):
-                                rooms[room]['hands'][name].remove(card)
-                                rooms[room]['played_cards'].append([card])
-                                emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
-                                emit('card_played', {'rank': card['rank'], 'suit': card['suit'], 'player': name}, room=room)
-                                emit('update_played_cards', {'played_cards': rooms[room]['played_cards']}, room=room)
-                            else:
-                                emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nicht mehr Karten spielen, als der Verteidiger Karten hat.'}, room=request.sid)
-                        else:
-                            emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nur Karten des gleichen Rangs spielen.'}, room=request.sid)
-                    else:
-                        emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nur Karten des gleichen Rangs spielen.'}, room=request.sid)
-                else:
-                    emit('message', {'name': 'System', 'message': 'Verteidiger kann keine Karten legen.'}, room=request.sid)
+                emit('message', {'name': 'System', 'message': 'Verteidiger kann keine Karten legen.'}, room=request.sid)
         else:
             emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=request.sid)
 
     update_roles(room)
     update_players(room)
+
+
+
 
 def update_roles(room):
     if room in rooms:
@@ -320,8 +376,6 @@ def update_roles(room):
                 emit('update_role', {'role': 'Verteidiger'}, room=rooms[room]['sids'][player])
             else:
                 emit('update_role', {'role': 'Mitangreifer'}, room=rooms[room]['sids'][player])
-
-
 
 @app.route('/room/<code>', methods=['GET', 'POST'])
 def join_room_direct(code):
@@ -336,7 +390,6 @@ def join_room_direct(code):
         return redirect(url_for('room'))
     return render_template('join_room.html', code=code)
 
-
 @socketio.on('join')
 def on_join(data):
     room = session.get('room')
@@ -348,10 +401,18 @@ def on_join(data):
             rooms[room]['hands'][name] = []
             rooms[room]['sids'][name] = [request.sid]
             emit('message', {'name': name, 'message': 'has entered the gameroom'}, room=room)
+            print(f"{name} has entered the gameroom {room}")
         elif request.sid not in rooms[room]['sids'][name]:
             rooms[room]['sids'][name].append(request.sid)
             join_room(room)
+            print(f"{name} has reconnected to the gameroom {room}")
     update_players(room)
+    print(f"Current players in room {room}: {rooms[room]['sids']}")
+
+
+
+
+
 
 def check_winner(room):
     players_with_no_cards = [player for player, hand in rooms[room]['hands'].items() if not hand]
@@ -370,67 +431,6 @@ def check_winner(room):
             emit('game_over', {'placements': rooms[room]['placements']}, room=room)
             rooms[room]['game_started'] = False
 
-    update_players(room)
-
-
-@socketio.on('play_card')
-def handle_play_card(data):
-    room = session.get('room')
-    name = session.get('name')
-    if room and name and room in rooms:
-        if not rooms[room].get('game_started', False):
-            emit('message', {'name': 'System', 'message': 'Das Spiel hat noch nicht begonnen. Bitte warten Sie, bis das Spiel gestartet ist.'}, room=request.sid)
-            return
-
-        card = {'rank': data['rank'], 'suit': data['suit']}
-        current_player = rooms[room]['current_player']
-        defender = rooms[room]['defender']
-        players = [player for player in rooms[room]['hands'] if rooms[room]['hands'][player]]
-
-        if card in rooms[room]['hands'][name]:
-            if name == current_player:
-                if 'played_cards' not in rooms[room]:
-                    rooms[room]['played_cards'] = []
-
-                if len(rooms[room]['played_cards']) < len(rooms[room]['hands'][defender]):
-                    if rooms[room].get('played_cards'):
-                        valid_ranks = {c['rank'] for group in rooms[room]['played_cards'] for c in group}
-                        if card['rank'] not in valid_ranks:
-                            emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nur Karten des gleichen Rangs spielen.'}, room=request.sid)
-                            return
-
-                    rooms[room]['hands'][name].remove(card)
-                    rooms[room]['played_cards'].append([card])
-
-                    emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
-                    emit('card_played', {'rank': card['rank'], 'suit': card['suit'], 'player': name}, room=room)
-                    emit('update_played_cards', {'played_cards': rooms[room]['played_cards']}, room=room)
-                    check_winner(room)
-                else:
-                    emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nicht mehr Karten spielen, als der Verteidiger Karten hat.'}, room=request.sid)
-            else:
-                if name != defender:
-                    if 'played_cards' in rooms[room] and rooms[room]['played_cards']:
-                        valid_ranks = {c['rank'] for group in rooms[room]['played_cards'] for c in group}
-                        if card['rank'] in valid_ranks:
-                            if len(rooms[room]['played_cards']) < len(rooms[room]['hands'][defender]):
-                                rooms[room]['hands'][name].remove(card)
-                                rooms[room]['played_cards'].append([card])
-                                emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
-                                emit('card_played', {'rank': card['rank'], 'suit': card['suit'], 'player': name}, room=room)
-                                emit('update_played_cards', {'played_cards': rooms[room]['played_cards']}, room=room)
-                            else:
-                                emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nicht mehr Karten spielen, als der Verteidiger Karten hat.'}, room=request.sid)
-                        else:
-                            emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nur Karten des gleichen Rangs spielen.'}, room=request.sid)
-                    else:
-                        emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Du kannst nur Karten des gleichen Rangs spielen.'}, room=request.sid)
-                else:
-                    emit('message', {'name': 'System', 'message': 'Verteidiger kann keine Karten legen.'}, room=request.sid)
-        else:
-            emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte ist nicht in deiner Hand.'}, room=request.sid)
-
-    update_roles(room)
     update_players(room)
 
 @socketio.on('overplay_card')
@@ -461,7 +461,7 @@ def handle_overplay_card(data):
                         rooms[room]['hands'][name].remove(card)
                         rooms[room]['played_cards'][target_index].append(card)
                         emit('update_hand', {'hand': rooms[room]['hands'][name]}, room=request.sid)
-                        emit('card_overplayed', {'rank': card['rank'], 'suit': card['suit'], 'player': name, 'target_index': target_index}, room=room)
+                        emit('card_overplayed', {'rank': card['rank'], 'suit': card['suit'], 'target_index': target_index}, room=room)
                         check_winner(room)
                     else:
                         emit('message', {'name': 'System', 'message': 'Ungültiger Zug. Diese Karte kann die Zielkarte nicht schlagen.'}, room=request.sid)
@@ -473,6 +473,8 @@ def handle_overplay_card(data):
             emit('message', {'name': 'System', 'message': 'Nur der Verteidiger darf Karten überlagern.'}, room=request.sid)
 
     update_players(room)
+
+
 
 @socketio.on('end_attack')
 def handle_end_attack():
@@ -518,8 +520,6 @@ def handle_end_attack():
             emit('message', {'name': 'System', 'message': 'Nur der Angreifer kann den Angriff beenden.'}, room=request.sid)
 
     update_players(room)
-
-
 
 @socketio.on('take_cards')
 def handle_take_cards():
@@ -569,7 +569,7 @@ def handle_take_cards():
     update_players(room)
 
 # session handling
-@socketio.on("connect")
+@socketio.on('connect')
 def connect(auth):
     room = session.get("room")
     name = session.get("name")
@@ -578,19 +578,19 @@ def connect(auth):
     if room not in rooms:
         leave_room(room)
         return
-    if room not in rooms or rooms[room].get('game_started', False):
+    if rooms[room].get('game_started', False):
         emit('redirect', {'url': url_for('multiplayer')})
         return
 
+    join_room(room)
     if name not in rooms[room]['sids']:
-        join_room(room)
         rooms[room]['sids'][name] = [request.sid]
-        rooms[room]['members'] += 1
-        send({"name": name, "message": "has entered the gameroom"}, to=room)
-        print(f"{name} joined room {room}")
-    elif request.sid not in rooms[room]['sids'][name]:
+    else:
         rooms[room]['sids'][name].append(request.sid)
-        join_room(room)
+
+    rooms[room]['members'] += 1
+    emit('message', {'name': name, 'message': f'has entered the gameroom {datetime.now().strftime("%d.%m.%Y, %H:%M:%S")}'}, room=room)
+    logger.info(f"{name} joined room {room}")
 
     try:
         new_session = RaumSitzung(raum=room, name=name)
@@ -598,7 +598,12 @@ def connect(auth):
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        print(f"Error adding session to the database: {e}")
+        logger.error(f"Error adding session to the database: {e}")
+
+    update_players(room)
+
+
+
 
 @socketio.on("disconnect")
 def disconnect():
@@ -606,25 +611,23 @@ def disconnect():
     name = session.get("name")
     leave_room(room)
 
-    if room in rooms:
-        if name in rooms[room]['sids']:
-            rooms[room]['sids'][name].remove(request.sid)
-            if not rooms[room]['sids'][name]:
-                del rooms[room]['sids'][name]
-                rooms[room]["members"] -= 1
-                if rooms[room]["members"] <= 0:
-                    del rooms[room]
+    if room in rooms and name in rooms[room]['sids']:
+        rooms[room]['sids'][name].remove(request.sid)
+        if not rooms[room]['sids'][name]:
+            del rooms[room]['sids'][name]
+            rooms[room]["members"] -= 1
+            if rooms[room]["members"] <= 0:
+                del rooms[room]
         send({"name": name, "message": "has left the room"}, to=room)
-        print(f"{name} has left the room {room}")
+        logger.info(f"{name} has left the room {room}")
 
-    try:
-        session_entry = RaumSitzung.query.filter_by(raum=room, name=name).order_by(RaumSitzung.beitrittszeit.desc()).first()
-        if session_entry:
-            session_entry.verlasszeit = datetime.utcnow()
-            db.session.commit()
-    except Exception as e:
-        db.session.rollback()
-        print(f"Error updating session in the database: {e}")
+    session_entry = RaumSitzung.query.filter_by(raum=room, name=name).order_by(RaumSitzung.beitrittszeit.desc()).first()
+    if session_entry:
+        session_entry.verlasszeit = datetime.utcnow()
+        db.session.commit()
+
+    update_players(room)
+
 
 # check saving values in the db
 @app.route('/check_db')
@@ -638,5 +641,6 @@ def check_db():
         'verlasszeit': session.verlasszeit
     } for session in sessions])
 
-if __name__ == "__main__":
-    socketio.run(app, debug=True)
+if __name__ == '__main__':
+    app.debug = True
+    socketio.run(app, host='0.0.0.0', port=8000)
