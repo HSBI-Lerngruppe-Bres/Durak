@@ -102,10 +102,19 @@
             if (type === 'link') {
                 const roomCode = '{{ code }}';
                 const link = `${window.location.origin}/room/${roomCode}`;
-                navigator.clipboard.writeText(link).then(() => {
+                const tempInput = document.createElement('input');
+                tempInput.value = link;
+                document.body.appendChild(tempInput);
+                tempInput.select();
+                tempInput.setSelectionRange(0, 99999); // For mobile devices
+                try {
+                    document.execCommand('copy');
                     modalText.innerText = 'Link kopiert: ' + link;
-                    roleExplanation.style.display = 'none';
-                });
+                } catch (err) {
+                    modalText.innerText = 'Fehler beim Kopieren des Links: ' + err;
+                }
+                document.body.removeChild(tempInput);
+                roleExplanation.style.display = 'none';
             } else if (type === 'info') {
                 modalText.innerText = 'Rolleninformationen:';
                 roleExplanation.style.display = 'block';
