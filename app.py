@@ -31,7 +31,7 @@ from models import Spieler, Spiel, SpielZustand, RaumSitzung
 
 # db init
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://durak_user:durak_password@34.46.51.53:3306/durak_db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://your_durak_user_name:your_durak_password@<ip_address>:<port_number>/durak_db'
 app.config['SECRET_KEY'] = 'geheimeschluessel'
 app.config['SESSION_COOKIE_SECURE'] = False
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
