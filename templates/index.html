@@ -43,50 +43,52 @@
         </header>
 
         <main role="main">
-          <section class="jumbotron text-center">
-              <h1 class="jumbotron-heading">Dein Durak Kartenspiel</h1>
-              <p class="lead-text-muted">Lade deine Freunde ein oder spiele selbst!</p>
-          </section>
-      
-          <div class="album py-5">
-              <div class="row justify-content-center">
-                  <div class="col-md-4">
-                      <div class="card mb-4 box-shadow">
-                          <img class="card-img-top" alt="Thumbnail" 
-                          src="{{url_for('static', filename='images/Thumbnail1.jpg')}}" 
-                          style="height: 225px; width: 100%; display: block;">
-                          <div class="card-body">
-                              <p class="card-text">Tauche in die spannende Welt von Durak ein. Lade deine Freunde ein und erlebe unvergessliche Online-Spielabende.</p>
-                              <div class="d-flex justify-content-between align-items-center">
-                                  <div class="btn-group">
-                                      <a href="{{ url_for('multiplayer') }}" class="btn btn-sm btn-primary">Spiel starten</a>
-                                  </div>
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-                  <div class="col-md-4">
-                      <div class="card mb-4 box-shadow">
-                          <img class="card-img-top" alt="Thumbnail" src="{{url_for('static', filename='images/Thumbnail2.jpg')}}" style="height: 225px; width: 100%; display: block;">
-                          <div class="card-body">
-                              <p class="card-text">Erlebe packende Spiele und verbessere dein Können mit jedem Zug! Starte jetzt dein Durak Spiel gegen KI.</p>
-                              <div class="d-flex justify-content-between align-items-center">
-                                  <div class="btn-group">
-                                      <a href="{{ url_for('multiplayer') }}" class="btn btn-sm btn-primary">Spiel starten</a>
-                                  </div>
-                              </div>
-                          </div>
-                      </div>
-                  </div>
-              </div>
-          </div>
-      </main>
-      
-      <footer class="text-muted text-center py-3">
-          <div class="container">
-              <p>&copy; 2024 Durak Online. Alle Rechte vorbehalten.</p>
-          </div>
-      </footer>
+            <section class="jumbotron text-center">
+                <h1 class="jumbotron-heading">Dein Durak Kartenspiel</h1>
+                <p class="lead text-muted">Lade deine Freunde ein oder spiele selbst!</p>
+            </section>
+
+            <div class="album py-5">
+                <div class="container">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card mb-4 box-shadow">
+                                <img class="card-img-top" alt="Thumbnail" 
+                                src="{{url_for('static', filename='images/Thumbnail1.jpg')}}" 
+                                style="height: 225px; width: 100%; display: block;">
+                                <div class="card-body">
+                                    <p class="card-text">Tauche in die spannende Welt von Durak ein. Lade deine Freunde ein und erlebe unvergessliche Online-Spielabende.</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('multiplayer') }}" class="btn btn-sm btn-primary">Spiel starten</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card mb-4 box-shadow">
+                                <img class="card-img-top" alt="Thumbnail" src="{{url_for('static', filename='images/Thumbnail2.jpg')}}" style="height: 225px; width: 100%; display: block;">
+                                <div class="card-body">
+                                    <p class="card-text">Erlebe packende Spiele und verbessere dein Können mit jedem Zug! Starte jetzt dein Durak Spiel gegen KI.</p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('multiplayer') }}" class="btn btn-sm btn-primary">Spiel starten</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="text-muted text-center py-3">
+            <div class="container">
+                <p>&copy; 2024 Durak Online. Alle Rechte vorbehalten.</p>
+            </div>
+        </footer>
     </div>
 
     <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>

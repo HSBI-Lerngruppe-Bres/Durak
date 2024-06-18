@@ -7,7 +7,7 @@ body {
     background-size: cover;
     color: #f5f5f5;
     position: relative; /* Ensure body can contain absolutely positioned elements */
-    overflow: hidden; /* Prevent scrollbars from showing */
+    /* overflow: hidden;  */
 }
 
 .video-overlay {
@@ -111,6 +111,17 @@ footer p {
     color: #ffcc00;
 }
 
-.lead-text-muted {
-    color: #ffcc00;
+@media (max-width: 768px) {
+    .jumbotron {
+        padding: 1rem 0.5rem;
+    }
+
+    .card-body {
+        padding: 1rem;
+    }
+
+    .content {
+        margin: 10px;
+        padding: 10px;
+    }
 }
